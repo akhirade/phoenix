@@ -43,7 +43,7 @@ const MESSAGES = {
     amountPaid: 'Amount Paid',
     mode: 'Mode',
     txn: 'Txn',
-    transactionId: 'ट्रान्झॅक्शन आयडी',
+    transactionId: 'Transaction ID',
     remarks: 'Remarks',
     paid: 'Paid',
     due: 'Due',

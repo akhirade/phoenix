@@ -1,9 +1,8 @@
 import React, { useMemo, useState } from 'react'
-import { useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useData } from '../lib/DataProvider'
 import { formatINR, monthKeyFromDate, todayISODate } from '../lib/utils'
-import type { PaymentMode } from '../lib/types'
+import type { Payment, PaymentMode } from '../lib/types'
 import { useToast } from '../components/ToastProvider'
 import { useI18n } from '../i18n/I18nProvider'
 
@@ -13,18 +12,14 @@ export function PaymentsPage() {
   const { t } = useI18n()
   const [searchParams] = useSearchParams()
   const [month, setMonth] = useState(monthKeyFromDate(new Date()))
-  const [seedStudent, setSeedStudent] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+
+  const seedStudent = searchParams.get('student')
 
   const active = useMemo(() => students.filter((s) => s.status === 'Active'), [students])
 
   const monthPayments = useMemo(() => payments.filter((p) => p.month === month), [payments, month])
-
-  useEffect(() => {
-    const sid = searchParams.get('student')
-    if (sid) setSeedStudent(sid)
-  }, [searchParams])
 
   const unpaid = useMemo(() => {
     const paidBy = new Map<string, number>()
@@ -76,7 +71,7 @@ export function PaymentsPage() {
       const dueAfter = Math.max(0, Number(st.monthly_fee || 0) - afterPaid)
       const status = dueAfter <= 0 ? 'Paid' : afterPaid > 0 ? 'Partial Paid' : 'Pending'
 
-      await addPayment({
+      const payload: Omit<Payment, 'id' | 'created_at'> = {
         student_id: st.id,
         student_name: st.full_name,
         seat_number: st.seat_number,
@@ -87,13 +82,16 @@ export function PaymentsPage() {
         transaction_id: String(fd.get('transaction_id') || '').trim() || null,
         remarks: String(fd.get('remarks') || '').trim() || null,
         status,
-      } as any)
+      }
+
+      await addPayment(payload)
 
       toast.success(t('paymentRecorded'))
 
       form.reset()
-    } catch (err: any) {
-      setError(err?.message || t('errCouldNotAddPayment'))
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : t('errCouldNotAddPayment')
+      setError(msg)
     } finally {
       setBusy(false)
     }
@@ -158,7 +156,7 @@ export function PaymentsPage() {
               <table className="sr-table">
                 <thead className="sr-thead">
                   <tr>
-                    <th className="sr-th">{t('date')}</th>
+                    <th className="sr-th whitespace-nowrap">{t('date')}</th>
                     <th className="sr-th">{t('tableStudent')}</th>
                     <th className="sr-th">{t('tableSeat')}</th>
                     <th className="sr-th">{t('amount')}</th>
@@ -172,7 +170,7 @@ export function PaymentsPage() {
                     .sort((a, b) => String(b.payment_date).localeCompare(String(a.payment_date)))
                     .map((p) => (
                       <tr key={p.id} className="border-t border-slate-800">
-                        <td className="sr-td">{p.payment_date}</td>
+                        <td className="sr-td whitespace-nowrap">{p.payment_date}</td>
                         <td className="sr-td">{p.student_name}</td>
                         <td className="sr-td">{p.seat_number ?? '-'}</td>
                         <td className="sr-td font-medium">{formatINR(Number(p.amount_paid || 0))}</td>
@@ -247,7 +245,7 @@ export function PaymentsPage() {
                   type="date"
                   name="payment_date"
                   defaultValue={todayISODate()}
-                  onFocus={(e) => (e.currentTarget as any).showPicker?.()}
+                  onFocus={(e) => (e.currentTarget as HTMLInputElement & { showPicker?: () => void }).showPicker?.()}
                   required
                 />
               </div>
