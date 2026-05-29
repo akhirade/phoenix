@@ -1,14 +1,51 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useData } from '../lib/DataProvider'
 import { useToast } from '../components/ToastProvider'
 import { useI18n } from '../i18n/I18nProvider'
+import type { AppSettings } from '../lib/types'
 
 export function SettingsPage() {
   const { settings, saveSettings } = useData()
+
+  const key = useMemo(
+    () =>
+      [
+        settings.defaultMonthlyFee,
+        settings.defaultDueDay,
+        settings.centerName ?? '',
+        settings.centerAddress ?? '',
+        settings.centerPhone ?? '',
+        settings.admissionTerms ?? '',
+      ].join('|'),
+    [
+      settings.defaultMonthlyFee,
+      settings.defaultDueDay,
+      settings.centerName,
+      settings.centerAddress,
+      settings.centerPhone,
+      settings.admissionTerms,
+    ],
+  )
+
+  return <SettingsEditor key={key} settings={settings} saveSettings={saveSettings} />
+}
+
+function SettingsEditor({
+  settings,
+  saveSettings,
+}: {
+  settings: AppSettings
+  saveSettings: (next: AppSettings) => Promise<void>
+}) {
   const toast = useToast()
   const { t } = useI18n()
+
   const [fee, setFee] = useState(String(settings.defaultMonthlyFee))
   const [due, setDue] = useState(String(settings.defaultDueDay))
+  const [centerName, setCenterName] = useState(settings.centerName ?? '')
+  const [centerAddress, setCenterAddress] = useState(settings.centerAddress ?? '')
+  const [centerPhone, setCenterPhone] = useState(settings.centerPhone ?? '')
+  const [admissionTerms, setAdmissionTerms] = useState(settings.admissionTerms ?? '')
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
 
@@ -19,7 +56,14 @@ export function SettingsPage() {
       const f = Number(fee || 0)
       const d = Number(due || 5)
       if (d < 1 || d > 28) throw new Error(t('errDueDayRange'))
-      await saveSettings({ defaultMonthlyFee: f, defaultDueDay: d })
+      await saveSettings({
+        defaultMonthlyFee: f,
+        defaultDueDay: d,
+        centerName: centerName.trim(),
+        centerAddress: centerAddress.trim(),
+        centerPhone: centerPhone.trim(),
+        admissionTerms: admissionTerms.trim(),
+      })
       toast.success(t('settingsSaved'))
       setMsg(t('saved'))
     } catch (e: any) {
@@ -72,6 +116,47 @@ export function SettingsPage() {
             onClick={onSave}
             disabled={busy}
           >
+            {busy ? t('saving') : t('save')}
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-4 sr-card p-3">
+        <div className="font-medium text-sm">{t('admissionTemplate')}</div>
+
+        <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs text-slate-400 mb-1">{t('centerName')}</label>
+            <input className="sr-input" value={centerName} onChange={(e) => setCenterName(e.target.value)} />
+          </div>
+          <div>
+            <label className="block text-xs text-slate-400 mb-1">{t('centerPhone')}</label>
+            <input className="sr-input" value={centerPhone} onChange={(e) => setCenterPhone(e.target.value)} />
+          </div>
+        </div>
+
+        <div className="mt-3">
+          <label className="block text-xs text-slate-400 mb-1">{t('centerAddress')}</label>
+          <textarea
+            className="sr-textarea"
+            rows={3}
+            value={centerAddress}
+            onChange={(e) => setCenterAddress(e.target.value)}
+          />
+        </div>
+
+        <div className="mt-3">
+          <label className="block text-xs text-slate-400 mb-1">{t('termsAndConditions')}</label>
+          <textarea
+            className="sr-textarea"
+            rows={10}
+            value={admissionTerms}
+            onChange={(e) => setAdmissionTerms(e.target.value)}
+          />
+        </div>
+
+        <div className="mt-3 flex items-center justify-end">
+          <button className="sr-btn-primary disabled:opacity-60" onClick={onSave} disabled={busy}>
             {busy ? t('saving') : t('save')}
           </button>
         </div>

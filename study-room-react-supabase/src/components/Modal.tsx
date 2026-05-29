@@ -34,7 +34,7 @@ export function Modal({
         if (e.target === e.currentTarget) onClose()
       }}
     >
-      <div className="w-full max-w-3xl rounded-2xl border border-slate-200 bg-white text-slate-900 shadow-2xl dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100">
+      <div className="w-full max-w-3xl max-h-[calc(100vh-2rem)] flex flex-col rounded-2xl border border-slate-200 bg-white text-slate-900 shadow-2xl dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100">
         <div className="flex items-start justify-between gap-3 border-b border-slate-200 p-4 dark:border-slate-800">
           <div>
             <div className="text-base font-semibold">{title}</div>
@@ -47,7 +47,7 @@ export function Modal({
             {t('close')}
           </button>
         </div>
-        <div className="p-4">{children}</div>
+        <div className="min-h-0 overflow-auto p-4">{children}</div>
       </div>
     </div>
   )

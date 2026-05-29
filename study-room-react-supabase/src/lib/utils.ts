@@ -29,3 +29,29 @@ export function dueDayFromISODate(iso: string | null | undefined): number | null
   if (!Number.isFinite(day)) return null
   return Math.min(28, Math.max(1, day))
 }
+
+export function randomToken(bytes = 24): string {
+  const arr = new Uint8Array(bytes)
+  crypto.getRandomValues(arr)
+  return Array.from(arr, (b) => b.toString(16).padStart(2, '0')).join('')
+}
+
+export function formatLocalDate(iso: string | null | undefined, locale = 'en-IN'): string {
+  if (!iso) return '-'
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return String(iso)
+  return new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'short', day: '2-digit' }).format(d)
+}
+
+export function formatLocalDateTime(iso: string | null | undefined, locale = 'en-IN'): string {
+  if (!iso) return '-'
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return String(iso)
+  return new Intl.DateTimeFormat(locale, {
+    year: 'numeric',
+    month: 'short',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(d)
+}

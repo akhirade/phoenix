@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from '
 import { useAuth } from '../auth/AuthProvider'
 import { supabase } from './supabase'
 import type { AppSettings, Payment, Student } from './types'
+import { randomToken } from './utils'
 
 type DataContextValue = {
   loading: boolean
@@ -10,8 +11,12 @@ type DataContextValue = {
   payments: Payment[]
   refreshAll: () => Promise<void>
 
+  refreshStudent: (studentId: string) => Promise<void>
+
   upsertStudent: (student: Partial<Student> & { id?: string }) => Promise<void>
   setStudentStatus: (studentId: string, status: 'Active' | 'Inactive') => Promise<void>
+
+  ensureAdmissionLink: (studentId: string) => Promise<string>
 
   addPayment: (payment: Omit<Payment, 'id' | 'created_at'>) => Promise<void>
 
@@ -20,7 +25,25 @@ type DataContextValue = {
 
 const DataContext = createContext<DataContextValue | null>(null)
 
-const DEFAULT_SETTINGS: AppSettings = { defaultMonthlyFee: 1500, defaultDueDay: 5 }
+const DEFAULT_SETTINGS: AppSettings = {
+  defaultMonthlyFee: 1500,
+  defaultDueDay: 5,
+  centerName: 'Phoenix Study Room',
+  centerAddress: '',
+  centerPhone: '',
+  admissionTerms:
+    'Terms and Conditions\n' +
+    '1. Students have to bear the Identity Card for entering the Library.\n' +
+    '2. Student should deposit their monthly fees between 15 to 5th of every month.\n' +
+    '3. The collected fee will not be refunded under any circumstances.\n' +
+    '4. Even if admission is taken on any date, it will be considered from 1st of that month.\n' +
+    '5. In case of misconduct, your admission will be cancelled immediately.\n' +
+    '6. Strict silence, decorum and discipline must be maintained in the library.\n' +
+    '7. Newspapers and magazines must be read only in the study center and should not be taken to any other reading areas.\n' +
+    '8. The library card is not transferable and its loss must be reported immediately.\n' +
+    '9. WiFi use is strictly restricted to study purpose only.\n' +
+    '10. All rights reserved to the organization regarding admission, cancellation, rule changes, etc.',
+}
 
 export function DataProvider({ children }: { children: React.ReactNode }) {
   const { session, loading: authLoading } = useAuth()
@@ -48,6 +71,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false)
     }
+  }
+
+  async function refreshStudent(studentId: string) {
+    if (!studentId) return
+    const { data, error } = await supabase.from('students').select('*').eq('id', studentId).single()
+    if (error) throw error
+    setStudents((prev) => prev.map((s) => (s.id === studentId ? (data as any) : s)))
   }
 
   useEffect(() => {
@@ -79,9 +109,15 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       student_code: student.student_code ?? null,
       full_name: student.full_name,
       mobile: student.mobile ?? null,
+      email: student.email ?? null,
+      birth_date: student.birth_date ?? null,
+      gender: student.gender ?? null,
       parent_contact: student.parent_contact ?? null,
+      emergency_contact: student.emergency_contact ?? null,
       id_proof: student.id_proof ?? null,
       address: student.address ?? null,
+      preparing_exam: student.preparing_exam ?? null,
+      first_payment_receipt_no: student.first_payment_receipt_no ?? null,
       joining_date: student.joining_date ?? null,
       seat_number: student.seat_number ?? null,
       monthly_fee: Number(student.monthly_fee ?? 0),
@@ -116,6 +152,22 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setStudents((prev) => prev.map((s) => (s.id === studentId ? (data as any) : s)))
   }
 
+  async function ensureAdmissionLink(studentId: string): Promise<string> {
+    const token = randomToken(24)
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+
+    const { data, error } = await supabase
+      .from('students')
+      .update({ admission_token: token, admission_token_expires_at: expiresAt } as any)
+      .eq('id', studentId)
+      .select('*')
+      .single()
+
+    if (error) throw error
+    setStudents((prev) => prev.map((s) => (s.id === studentId ? (data as any) : s)))
+    return token
+  }
+
   async function addPayment(payment: Omit<Payment, 'id' | 'created_at'>) {
     const { data, error } = await supabase.from('payments').insert(payment as any).select('*').single()
     if (error) throw error
@@ -129,8 +181,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       students,
       payments,
       refreshAll,
+      refreshStudent,
       upsertStudent,
       setStudentStatus,
+      ensureAdmissionLink,
       addPayment,
       saveSettings,
     }),

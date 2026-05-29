@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useData } from '../lib/DataProvider'
-import { dueDayFromISODate, formatINR, monthKeyFromDate, seatNumbers, todayISODate } from '../lib/utils'
+import { dueDayFromISODate, formatINR, formatLocalDate, formatLocalDateTime, monthKeyFromDate, seatNumbers, todayISODate } from '../lib/utils'
 import type { Student } from '../lib/types'
 import { Modal } from './Modal'
 import { Tag } from './Tag'
@@ -17,9 +17,11 @@ export function StudentProfileModal({
   studentId: string | null
   onClose: () => void
 }) {
-  const { students, payments, settings, upsertStudent } = useData()
+  const { students, payments, settings, upsertStudent, ensureAdmissionLink, refreshStudent } = useData()
   const toast = useToast()
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
+
+  const intlLocale = locale === 'mr' ? 'mr-IN' : 'en-IN'
 
   const [mode, setMode] = useState<'profile' | 'edit'>('profile')
   const [focusField, setFocusField] = useState<'seat' | null>(null)
@@ -74,11 +76,22 @@ export function StudentProfileModal({
 
   useEffect(() => {
     if (!open) return
-    setMode('profile')
-    setFocusField(null)
-    setBusy(false)
-    setError(null)
+    const id = window.setTimeout(() => {
+      setMode('profile')
+      setFocusField(null)
+      setBusy(false)
+      setError(null)
+    }, 0)
+    return () => window.clearTimeout(id)
   }, [open, studentId])
+
+  useEffect(() => {
+    if (!open) return
+    if (!studentId) return
+    refreshStudent(studentId).catch(() => {
+      // ignore: non-blocking refresh
+    })
+  }, [open, studentId, refreshStudent])
 
   useEffect(() => {
     if (mode !== 'edit') return
@@ -92,6 +105,16 @@ export function StudentProfileModal({
       el.focus()
     }, 0)
   }, [mode, focusField])
+
+  function getValidAdmissionToken(st: Student): string | null {
+    if (!st.admission_token) return null
+    if (!st.admission_token_expires_at) return st.admission_token
+
+    const exp = Date.parse(st.admission_token_expires_at)
+    if (!Number.isFinite(exp)) return st.admission_token
+    if (exp > Date.now()) return st.admission_token
+    return null
+  }
 
   return (
     <Modal
@@ -308,6 +331,75 @@ export function StudentProfileModal({
                     </Tag>
                   }
                 />
+              </div>
+
+              <div className="rounded-xl border border-slate-800 bg-slate-900/20 p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="font-medium text-sm">{t('admissionForm')}</div>
+                  <Tag kind={student.admission_submitted_at ? 'good' : 'warn'}>
+                    {student.admission_submitted_at ? t('admissionSubmitted') : t('admissionNotSubmitted')}
+                  </Tag>
+                </div>
+
+                <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
+                  <button
+                    className="sr-btn"
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const token = getValidAdmissionToken(student) ?? (await ensureAdmissionLink(student.id))
+                        const url = `${window.location.origin}/admission/${token}`
+                        window.location.assign(url)
+                      } catch (e: unknown) {
+                        const msg = e instanceof Error ? e.message : 'Failed'
+                        toast.error(msg)
+                      }
+                    }}
+                  >
+                    {t('openAdmissionForm')}
+                  </button>
+
+                  <button
+                    className="sr-btn"
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const token = getValidAdmissionToken(student) ?? (await ensureAdmissionLink(student.id))
+
+                        const url = `${window.location.origin}/admission/${token}`
+                        await navigator.clipboard.writeText(url)
+                        toast.success(t('admissionLinkCopied'))
+                      } catch (e: unknown) {
+                        const msg = e instanceof Error ? e.message : 'Failed'
+                        toast.error(msg)
+                      }
+                    }}
+                  >
+                    {t('copyAdmissionLink')}
+                  </button>
+
+                  <Link className="sr-btn" to={`/admission/print/${student.id}`} onClick={onClose}>
+                    {t('printAdmissionForm')}
+                  </Link>
+                </div>
+
+                <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                  <Info label={t('submittedAt')} value={formatLocalDateTime(student.admission_submitted_at, intlLocale)} />
+                  <Info label={t('signatureName')} value={student.admission_signature_name ?? '-'} />
+                  <Info label={t('email')} value={student.email ?? '-'} />
+                  <Info label={t('birthDate')} value={formatLocalDate(student.birth_date, intlLocale)} />
+                  <Info label={t('gender')} value={student.gender ?? '-'} />
+                  <Info label={t('emergencyContact')} value={student.emergency_contact ?? '-'} />
+                  <Info label={t('preparingExam')} value={student.preparing_exam ?? '-'} />
+                  <Info label={t('firstPaymentReceiptNo')} value={student.first_payment_receipt_no ?? '-'} />
+                </div>
+
+                <div className="mt-3">
+                  <div className="text-xs text-slate-600 dark:text-slate-400">{t('address')}</div>
+                  <div className="mt-1 rounded-xl border border-slate-800 bg-slate-950/30 p-3 text-sm text-slate-200 whitespace-pre-line">
+                    {student.address ?? '-'}
+                  </div>
+                </div>
               </div>
 
               <div className="rounded-xl border border-slate-800 bg-slate-900/20 p-3">

@@ -8,3 +8,71 @@ html, body, #root {
 body {
   margin: 0;
 }
+
+@page {
+  margin: 12mm;
+}
+
+@media print {
+  html, body, #root {
+    height: auto;
+  }
+
+  body {
+    margin: 0 !important;
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  header,
+  aside,
+  footer {
+    display: none !important;
+  }
+
+  main {
+    border: 0 !important;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+
+  .sr-card,
+  .sr-card-soft {
+    border: 0 !important;
+    background: transparent !important;
+  }
+
+  .sr-print {
+    padding: 0 !important;
+    font-size: 11px !important;
+    line-height: 1.25 !important;
+  }
+
+  .sr-print .sr-title {
+    font-size: 16px !important;
+  }
+
+  .sr-print .sr-subtitle {
+    font-size: 12px !important;
+  }
+
+  .sr-print .sr-print-block {
+    padding: 8px !important;
+  }
+
+  .sr-print .sr-print-avoid-break {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Reduce large vertical gaps on the print page */
+  .sr-print .mt-4 {
+    margin-top: 0.5rem !important;
+  }
+  .sr-print .mt-3 {
+    margin-top: 0.4rem !important;
+  }
+  .sr-print .gap-3 {
+    gap: 0.5rem !important;
+  }
+}

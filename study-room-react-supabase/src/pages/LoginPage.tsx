@@ -12,7 +12,9 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
-  const trademarkText = 'Phoenix™ — Ashish Khirade'
+  const year = new Date().getFullYear()
+  const trademarkText = 'Phoenix™'
+  const copyrightText = `© ${year} Ashish Khirade. All rights reserved.`
 
   if (session) return <Navigate to="/dashboard" replace />
 
@@ -99,7 +101,8 @@ export function LoginPage() {
         </div>
 
         <div className="mt-4 text-center text-xs text-slate-600 dark:text-slate-400">
-          {trademarkText}
+          <div>{trademarkText}</div>
+          <div>{copyrightText}</div>
         </div>
       </div>
     </div>

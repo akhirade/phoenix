@@ -43,7 +43,9 @@ export function AppLayout() {
   const { theme, toggleTheme } = useTheme()
   const { locale, toggleLocale, t } = useI18n()
 
-  const trademarkText = 'Phoenix™ — Ashish Khirade'
+  const year = new Date().getFullYear()
+  const trademarkText = 'Phoenix™'
+  const copyrightText = `© ${year} Ashish Khirade. All rights reserved.`
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
@@ -93,7 +95,8 @@ export function AppLayout() {
       </div>
 
       <footer className="mx-auto max-w-6xl px-4 pb-6 text-xs text-slate-600 dark:text-slate-400">
-        {trademarkText}
+        <div>{trademarkText}</div>
+        <div>{copyrightText}</div>
       </footer>
     </div>
   )
