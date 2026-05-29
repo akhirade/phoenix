@@ -12,6 +12,8 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
+  const trademarkText = 'Phoenix™ — Ashish Khirade'
+
   if (session) return <Navigate to="/dashboard" replace />
 
   const envOk = Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY)
@@ -38,7 +40,8 @@ export function LoginPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 grid place-items-center px-4">
-      <div className="w-full max-w-md sr-card p-5">
+      <div className="w-full max-w-md">
+        <div className="sr-card p-5">
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="text-lg font-semibold">{t('loginTitle')}</div>
@@ -93,8 +96,10 @@ export function LoginPage() {
           </button>
         </form>
 
-        <div className="text-xs text-slate-500 mt-4">
-          {t('tipInviteOnly')}
+        </div>
+
+        <div className="mt-4 text-center text-xs text-slate-600 dark:text-slate-400">
+          {trademarkText}
         </div>
       </div>
     </div>

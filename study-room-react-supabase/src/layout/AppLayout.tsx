@@ -43,6 +43,8 @@ export function AppLayout() {
   const { theme, toggleTheme } = useTheme()
   const { locale, toggleLocale, t } = useI18n()
 
+  const trademarkText = 'Phoenix™ — Ashish Khirade'
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
       <header className="border-b border-slate-200 bg-white/80 backdrop-blur dark:border-slate-800 dark:bg-slate-950/80">
@@ -89,6 +91,10 @@ export function AppLayout() {
           <Outlet />
         </main>
       </div>
+
+      <footer className="mx-auto max-w-6xl px-4 pb-6 text-xs text-slate-600 dark:text-slate-400">
+        {trademarkText}
+      </footer>
     </div>
   )
 }

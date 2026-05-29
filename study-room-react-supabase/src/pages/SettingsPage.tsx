@@ -78,7 +78,7 @@ export function SettingsPage() {
       </div>
 
       <div className="mt-4 text-xs text-slate-500">
-        {t('securityTip')}
+        {t('tipInviteOnly')}
       </div>
     </div>
   )
