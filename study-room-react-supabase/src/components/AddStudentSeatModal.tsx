@@ -172,13 +172,13 @@ export function AddStudentSeatModal({
       onClose={onClose}
     >
       {seatOccupiedBy ? (
-        <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-100">
+        <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-900 dark:text-rose-100">
           {t('errSeatOccupiedBy', { seat: seatNumber, name: seatOccupiedBy.full_name })}
         </div>
       ) : null}
 
       {error ? (
-        <div className="mt-3 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-100">
+        <div className="mt-3 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-900 dark:text-rose-100">
           {error}
         </div>
       ) : null}

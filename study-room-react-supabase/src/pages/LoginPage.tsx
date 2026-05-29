@@ -42,7 +42,6 @@ export function LoginPage() {
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="text-lg font-semibold">{t('loginTitle')}</div>
-            <div className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t('loginSubtitle')}</div>
           </div>
           <button className="sr-btn" type="button" onClick={toggleLocale} aria-label="Toggle language">
             {locale === 'en' ? t('langEnglish') : t('langMarathi')}
@@ -50,13 +49,13 @@ export function LoginPage() {
         </div>
 
         {!envOk ? (
-          <div className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-100">
+          <div className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-900 dark:text-amber-100">
             Missing <strong>VITE_SUPABASE_URL</strong> / <strong>VITE_SUPABASE_ANON_KEY</strong>.
           </div>
         ) : null}
 
         {error ? (
-          <div className="mt-4 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-100">
+          <div className="mt-4 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-900 dark:text-rose-100">
             {error}
           </div>
         ) : null}

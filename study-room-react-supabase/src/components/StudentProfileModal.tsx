@@ -115,7 +115,7 @@ export function StudentProfileModal({
           ) : null}
 
           {error ? (
-            <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-100">
+            <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-900 dark:text-rose-100">
               {error}
             </div>
           ) : null}
