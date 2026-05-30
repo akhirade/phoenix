@@ -2,6 +2,8 @@ export type AppSettings = {
   defaultMonthlyFee: number
   defaultDueDay: number
 
+  totalSeats?: number
+
   centerName?: string
   centerAddress?: string
   centerPhone?: string

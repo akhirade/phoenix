@@ -42,6 +42,7 @@ function SettingsEditor({
 
   const [fee, setFee] = useState(String(settings.defaultMonthlyFee))
   const [due, setDue] = useState(String(settings.defaultDueDay))
+  const [totalSeats, setTotalSeats] = useState(String(settings.totalSeats ?? 45))
   const [centerName, setCenterName] = useState(settings.centerName ?? '')
   const [centerAddress, setCenterAddress] = useState(settings.centerAddress ?? '')
   const [centerPhone, setCenterPhone] = useState(settings.centerPhone ?? '')
@@ -55,10 +56,13 @@ function SettingsEditor({
     try {
       const f = Number(fee || 0)
       const d = Number(due || 5)
+      const seats = Number(totalSeats || 45)
       if (d < 1 || d > 28) throw new Error(t('errDueDayRange'))
+      if (!Number.isFinite(seats) || seats < 1 || seats > 500) throw new Error(t('errTotalSeatsRange'))
       await saveSettings({
         defaultMonthlyFee: f,
         defaultDueDay: d,
+        totalSeats: Math.floor(seats),
         centerName: centerName.trim(),
         centerAddress: centerAddress.trim(),
         centerPhone: centerPhone.trim(),
@@ -107,6 +111,17 @@ function SettingsEditor({
               max={28}
               value={due}
               onChange={(e) => setDue(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-slate-400 mb-1">{t('totalSeats')}</label>
+            <input
+              className="sr-input"
+              type="number"
+              min={1}
+              max={500}
+              value={totalSeats}
+              onChange={(e) => setTotalSeats(e.target.value)}
             />
           </div>
         </div>

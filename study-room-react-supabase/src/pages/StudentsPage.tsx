@@ -8,12 +8,11 @@ import { StudentProfileModal } from '../components/StudentProfileModal'
 import { useToast } from '../components/ToastProvider'
 import { useI18n } from '../i18n/I18nProvider'
 
-const SEATS_TOTAL = 45
-
 export function StudentsPage() {
   const { students, settings, upsertStudent, setStudentStatus } = useData()
   const toast = useToast()
   const { t } = useI18n()
+  const seatsTotal = Number(settings.totalSeats || 45)
   const [searchParams, setSearchParams] = useSearchParams()
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<'all' | 'active' | 'inactive'>('all')
@@ -62,12 +61,12 @@ export function StudentsPage() {
 
     if (seat) {
       const n = Number(seat)
-      if (Number.isFinite(n) && n >= 1 && n <= SEATS_TOTAL) {
+      if (Number.isFinite(n) && n >= 1 && n <= seatsTotal) {
         setEditing(null)
         setSeedSeat(n)
       }
     }
-  }, [searchParams, students])
+  }, [searchParams, students, seatsTotal])
 
   async function onSave(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -253,7 +252,7 @@ export function StudentsPage() {
             </table>
           </div>
 
-          <div className="mt-2 text-xs text-slate-500">{t('totalSeatsEnforced', { n: SEATS_TOTAL })}</div>
+          <div className="mt-2 text-xs text-slate-500">{t('totalSeatsEnforced', { n: seatsTotal })}</div>
         </div>
 
         <div className={
@@ -340,7 +339,7 @@ export function StudentsPage() {
                   defaultValue={editing?.seat_number ?? seedSeat ?? ''}
                 >
                   <option value="">{t('noSeat')}</option>
-                  {seatNumbers(SEATS_TOTAL).map((n) => (
+                  {seatNumbers(seatsTotal).map((n) => (
                     <option
                       key={n}
                       value={n}

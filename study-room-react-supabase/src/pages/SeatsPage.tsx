@@ -6,17 +6,16 @@ import { StudentProfileModal } from '../components/StudentProfileModal'
 import { AddStudentSeatModal } from '../components/AddStudentSeatModal'
 import { useI18n } from '../i18n/I18nProvider'
 
-const SEATS_TOTAL = 45
-
 type SeatState =
   | { kind: 'available' }
   | { kind: 'occupied'; studentId: string; name: string }
   | { kind: 'pending'; studentId: string; name: string; due: number }
 
 export function SeatsPage() {
-  const { students, payments } = useData()
+  const { students, payments, settings } = useData()
   const { t } = useI18n()
   const monthKey = monthKeyFromDate(new Date())
+  const seatsTotal = Number(settings.totalSeats || 45)
   const [profileId, setProfileId] = useState<string | null>(null)
   const [profileOpen, setProfileOpen] = useState(false)
   const [addSeat, setAddSeat] = useState<number | null>(null)
@@ -72,7 +71,7 @@ export function SeatsPage() {
       </div>
 
       <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
-        {seatNumbers(SEATS_TOTAL).map((n) => {
+        {seatNumbers(seatsTotal).map((n) => {
           const st = seatMap.get(n) || ({ kind: 'available' } as SeatState)
           return <SeatCard key={n} seat={n} state={st} onClick={() => onSeatClick(n, st)} />
         })}

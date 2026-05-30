@@ -260,7 +260,7 @@ export function StudentProfileModal({
                   </label>
                   <select className="sr-select" name="seat_number" defaultValue={student.seat_number ?? ''}>
                     <option value="">{t('noSeat')}</option>
-                    {seatNumbers(45).map((n) => (
+                    {seatNumbers(Number(settings.totalSeats || 45)).map((n) => (
                       <option
                         key={n}
                         value={n}

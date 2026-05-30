@@ -159,6 +159,7 @@ const MESSAGES = {
     settingsSubtitle: 'Defaults stored in Supabase.',
     defaultMonthlyFee: 'Default Monthly Fee',
     defaultDueDay: 'Default Due Day (1-28)',
+    totalSeats: 'Total Seats',
     admissionTemplate: 'Admission Form Template',
     centerName: 'Center Name',
     centerAddress: 'Center Address',
@@ -169,6 +170,7 @@ const MESSAGES = {
     saveFailed: 'Save failed',
     securityTip: 'Security tip: In Supabase Auth settings, disable public signups and invite only your 2–3 users.',
     errDueDayRange: 'Due day must be between 1 and 28',
+    errTotalSeatsRange: 'Total seats must be between 1 and 500',
 
     studentProfile: 'Student Profile',
     studentNotFound: 'Student not found.',
@@ -383,6 +385,7 @@ const MESSAGES = {
     settingsSubtitle: 'डीफॉल्ट सेटिंग्ज Supabase मध्ये सेव्ह होतात.',
     defaultMonthlyFee: 'डीफॉल्ट मासिक फी',
     defaultDueDay: 'डीफॉल्ट देय दिनांक (1-28)',
+    totalSeats: 'एकूण सीट्स',
     admissionTemplate: 'अ‍ॅडमिशन फॉर्म टेम्पलेट',
     centerName: 'केंद्राचे नाव',
     centerAddress: 'केंद्राचा पत्ता',
@@ -393,6 +396,7 @@ const MESSAGES = {
     saveFailed: 'सेव्ह अयशस्वी',
     securityTip: 'टीप: Supabase Auth मध्ये public signups बंद करा आणि फक्त 2–3 users invite करा.',
     errDueDayRange: 'देय दिनांक 1 ते 28 दरम्यान असावा',
+    errTotalSeatsRange: 'एकूण सीट्स 1 ते 500 दरम्यान असाव्यात',
 
     studentProfile: 'विद्यार्थी प्रोफाइल',
     studentNotFound: 'विद्यार्थी सापडला नाही.',

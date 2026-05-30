@@ -28,6 +28,7 @@ const DataContext = createContext<DataContextValue | null>(null)
 const DEFAULT_SETTINGS: AppSettings = {
   defaultMonthlyFee: 1500,
   defaultDueDay: 5,
+  totalSeats: 45,
   centerName: 'Phoenix Study Room',
   centerAddress: '',
   centerPhone: '',

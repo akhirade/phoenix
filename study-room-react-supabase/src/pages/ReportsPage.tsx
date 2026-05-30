@@ -3,13 +3,13 @@ import { useData } from '../lib/DataProvider'
 import { formatINR, monthKeyFromDate } from '../lib/utils'
 import { useI18n } from '../i18n/I18nProvider'
 
-const SEATS_TOTAL = 45
-
 export function ReportsPage() {
-  const { students, payments } = useData()
+  const { students, payments, settings } = useData()
   const { t } = useI18n()
   const [month, setMonth] = useState(monthKeyFromDate(new Date()))
   const [ledgerStudentId, setLedgerStudentId] = useState('')
+
+  const seatsTotal = Number(settings.totalSeats || 45)
 
   const active = useMemo(() => students.filter((s) => s.status === 'Active'), [students])
 
@@ -66,10 +66,10 @@ export function ReportsPage() {
     const pendingCount = duesAll.filter((x) => x.paid <= 0 && x.due > 0).length
 
     const occupied = active.filter((s) => Number(s.seat_number)).length
-    const vacant = SEATS_TOTAL - occupied
+    const vacant = seatsTotal - occupied
 
     return { pendingAmount, paidCount, partialCount, pendingCount, occupied, vacant }
-  }, [active, paidByStudent])
+  }, [active, paidByStudent, seatsTotal])
 
   const modeTotals = useMemo(() => {
     const map = new Map<string, number>()
@@ -239,7 +239,7 @@ export function ReportsPage() {
       <div className="mt-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <Stat label={t('statOccupied')} value={String(monthSummary.occupied)} />
         <Stat label={t('statVacant')} value={String(monthSummary.vacant)} />
-        <Stat label={t('statSeats')} value={String(SEATS_TOTAL)} />
+        <Stat label={t('statSeats')} value={String(seatsTotal)} />
         <Stat label={t('statCash')} value={formatINR(modeTotals.Cash)} />
         <Stat label={t('statUpi')} value={formatINR(modeTotals.UPI)} />
         <Stat label={t('statBank')} value={formatINR(modeTotals.Bank + modeTotals.Other)} />

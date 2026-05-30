@@ -3,17 +3,17 @@ import { useData } from '../lib/DataProvider'
 import { formatINR, monthKeyFromDate } from '../lib/utils'
 import { useI18n } from '../i18n/I18nProvider'
 
-const SEATS_TOTAL = 45
-
 export function DashboardPage() {
-  const { loading, students, payments } = useData()
+  const { loading, students, payments, settings } = useData()
   const { t } = useI18n()
   const monthKey = monthKeyFromDate(new Date())
+
+  const seatsTotal = Number(settings.totalSeats || 45)
 
   const stats = useMemo(() => {
     const active = students.filter((s) => s.status === 'Active')
     const occupied = active.filter((s) => Number(s.seat_number)).length
-    const available = SEATS_TOTAL - occupied
+    const available = seatsTotal - occupied
     const monthPayments = payments.filter((p) => p.month === monthKey)
     const collected = monthPayments.reduce((sum, p) => sum + Number(p.amount_paid || 0), 0)
 
@@ -30,7 +30,7 @@ export function DashboardPage() {
     const pendingCount = Array.from(dueMap.values()).filter((d) => d > 0).length
 
     return { activeCount: active.length, occupied, available, collected, pendingCount }
-  }, [students, payments, monthKey])
+  }, [students, payments, monthKey, seatsTotal])
 
   return (
     <div>
@@ -42,7 +42,7 @@ export function DashboardPage() {
       </div>
 
       <div className="mt-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <Stat label={t('statTotalSeats')} value={String(SEATS_TOTAL)} />
+        <Stat label={t('statTotalSeats')} value={String(seatsTotal)} />
         <Stat label={t('statOccupied')} value={String(stats.occupied)} />
         <Stat label={t('statAvailable')} value={String(stats.available)} />
         <Stat label={t('statActiveStudents')} value={String(stats.activeCount)} />
