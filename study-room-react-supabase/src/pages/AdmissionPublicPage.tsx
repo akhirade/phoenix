@@ -127,7 +127,7 @@ function AdmissionPublicForm({
   const [submitted, setSubmitted] = useState(false)
 
   const [fullName, setFullName] = useState(student.full_name ?? '')
-  const [mobile, setMobile] = useState(student.mobile ?? '')
+  const [mobile, setMobile] = useState(normalizeMobile10(student.mobile ?? ''))
   const [email, setEmail] = useState(student.email ?? '')
   const [birthDate, setBirthDate] = useState(student.birth_date ?? '')
   const [gender, setGender] = useState(student.gender ?? '')
@@ -145,10 +145,10 @@ function AdmissionPublicForm({
     setBusy(true)
 
     try {
-      if (!token) throw new Error(t('errInvalidLink'))
+    if (!token) throw new Error(t('errInvalidLink'))
       if (!fullName.trim()) throw new Error(t('errFullNameRequired'))
-      const mobileClean = mobile.replace(/\D+/g, '').trim()
-      if (!/^\d{10}$/.test(mobileClean)) throw new Error(t('errMobile10Digits'))
+    const mobileClean = normalizeMobile10(mobile)
+    if (!/^\d{10}$/.test(mobileClean)) throw new Error(t('errMobile10Digits'))
       if (!address.trim()) throw new Error(t('errAddressRequired'))
       if (!gender.trim()) throw new Error(t('errGenderRequired'))
       if (!acceptTerms) throw new Error(t('errAcceptTerms'))
@@ -173,17 +173,31 @@ function AdmissionPublicForm({
       setSubmitted(true)
     } catch (e: unknown) {
       const anyErr = e as any
-      const raw = String((anyErr && anyErr.message) || '')
+      const raw =
+        String(anyErr?.message || '') +
+        ' ' +
+        String(anyErr?.details || '') +
+        ' ' +
+        String(anyErr?.hint || '')
+
+      const code = String(anyErr?.code || anyErr?.error?.code || '')
+
       const isDupMobile =
-        anyErr?.code === '23505' ||
+        code === '23505' ||
         /students_mobile_unique/i.test(raw) ||
         /mobile number already used/i.test(raw)
 
+      const isInvalidLink = /invalid or expired link/i.test(raw)
+
       const msg = isDupMobile
         ? t('errMobileAlreadyUsedGeneric')
-        : e instanceof Error
-          ? e.message
-          : t('errSubmitFailed')
+        : isInvalidLink
+          ? t('errInvalidLink')
+          : typeof anyErr?.message === 'string' && anyErr.message
+            ? anyErr.message
+            : e instanceof Error
+              ? e.message
+              : t('errSubmitFailed')
 
       onError(msg)
     } finally {
@@ -215,10 +229,9 @@ function AdmissionPublicForm({
           <input
             className="sr-input"
             value={mobile}
-            onChange={(e) => setMobile(e.target.value)}
+            onChange={(e) => setMobile(normalizeMobile10(e.target.value))}
             inputMode="numeric"
-            pattern="\\d{10}"
-            maxLength={10}
+            autoComplete="tel"
             required
           />
         </div>
@@ -315,4 +328,23 @@ function AdmissionPublicForm({
       </button>
     </form>
   )
+}
+
+function normalizeMobile10(v: string): string {
+  const normalized = toAsciiDigits(String(v || ''))
+  const digits = normalized.replace(/\D+/g, '')
+  if (!digits) return ''
+  return digits.length <= 10 ? digits : digits.slice(-10)
+}
+
+function toAsciiDigits(input: string): string {
+  // Support common non-ASCII digit sets used on Indian keyboards.
+  // Devanagari: 66-6F (०-९)
+  // Fullwidth: F10-F19 (０-９)
+  return input.replace(/[\u0966-\u096F\uFF10-\uFF19]/g, (ch) => {
+    const cp = ch.codePointAt(0) || 0
+    if (cp >= 0x0966 && cp <= 0x096f) return String(cp - 0x0966)
+    if (cp >= 0xff10 && cp <= 0xff19) return String(cp - 0xff10)
+    return ch
+  })
 }

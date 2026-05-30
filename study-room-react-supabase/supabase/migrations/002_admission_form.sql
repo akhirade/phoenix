@@ -125,8 +125,8 @@ begin
     raise exception 'Full name is required';
   end if;
 
-  v_mobile := regexp_replace(coalesce(p_mobile, ''), '\\s+', '', 'g');
-  if v_mobile !~ '^\\d{10}$' then
+  v_mobile := regexp_replace(coalesce(p_mobile, ''), '[^0-9]+', '', 'g');
+  if v_mobile !~ '^[0-9]{10}$' then
     raise exception 'Mobile number must be 10 digits';
   end if;
 

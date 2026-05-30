@@ -64,8 +64,8 @@ where admission_token is not null;
 -- Unique mobile number (normalized digits) for data quality
 -- NOTE: Creating this index will fail if duplicates already exist.
 create unique index if not exists students_mobile_unique
-on public.students ((regexp_replace(coalesce(mobile, ''), '\\D+', '', 'g')))
-where regexp_replace(coalesce(mobile, ''), '\\D+', '', 'g') <> '';
+on public.students ((regexp_replace(coalesce(mobile, ''), '[^0-9]+', '', 'g')))
+where regexp_replace(coalesce(mobile, ''), '[^0-9]+', '', 'g') <> '';
 
 -- One active student per seat (business rule)
 create unique index if not exists students_unique_active_seat
@@ -218,8 +218,8 @@ begin
     raise exception 'Full name is required';
   end if;
 
-  v_mobile := regexp_replace(coalesce(p_mobile, ''), '\\s+', '', 'g');
-  if v_mobile !~ '^\\d{10}$' then
+  v_mobile := regexp_replace(coalesce(p_mobile, ''), '[^0-9]+', '', 'g');
+  if v_mobile !~ '^[0-9]{10}$' then
     raise exception 'Mobile number must be 10 digits';
   end if;
 

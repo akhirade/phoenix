@@ -15,6 +15,7 @@ This repo keeps SQL migrations under `supabase/migrations/`.
    - `002_admission_form.sql`
    - `003_rls.sql`
    - `004_unique_mobile.sql`
+   - `005_fix_mobile_regex.sql`
 
 They are written to be **safe to re-run** (uses `if not exists`, `create or replace`, `drop policy if exists`, etc.).
 

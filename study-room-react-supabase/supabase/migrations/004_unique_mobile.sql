@@ -8,7 +8,7 @@ begin
   if exists (
     select 1
     from (
-      select regexp_replace(coalesce(mobile, ''), '\\D+', '', 'g') as m
+      select regexp_replace(coalesce(mobile, ''), '[^0-9]+', '', 'g') as m
       from public.students
     ) x
     where x.m <> ''
@@ -22,5 +22,5 @@ $$;
 
 -- Unique index on normalized mobile (digits only)
 create unique index if not exists students_mobile_unique
-on public.students ((regexp_replace(coalesce(mobile, ''), '\\D+', '', 'g')))
-where regexp_replace(coalesce(mobile, ''), '\\D+', '', 'g') <> '';
+on public.students ((regexp_replace(coalesce(mobile, ''), '[^0-9]+', '', 'g')))
+where regexp_replace(coalesce(mobile, ''), '[^0-9]+', '', 'g') <> '';
