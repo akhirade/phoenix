@@ -33,6 +33,10 @@ body {
   main {
     border: 0 !important;
     background: transparent !important;
+  html,
+  body {
+    overflow-x: hidden;
+  }
     padding: 0 !important;
   }
 

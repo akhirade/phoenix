@@ -74,6 +74,22 @@ export function StudentProfileModal({
     }
   }, [payments, studentId, monthKey, student?.monthly_fee, settings.defaultMonthlyFee, t])
 
+  const activation = useMemo(() => {
+    if (!student) return null
+    if (!student.admission_submitted_at) return null
+
+    const hasSeat = student.status === 'Active' && Number(student.seat_number)
+    const fee = Number(student.monthly_fee ?? settings.defaultMonthlyFee)
+    const hasFee = fee > 0
+    const paidThisMonth = (current?.due ?? 0) <= 0
+
+    return {
+      hasSeat,
+      hasFee,
+      paidThisMonth,
+    }
+  }, [student, current?.due, settings.defaultMonthlyFee])
+
   useEffect(() => {
     if (!open) return
     const id = window.setTimeout(() => {
@@ -357,7 +373,7 @@ export function StudentProfileModal({
                 />
               </div>
 
-              <div className="rounded-xl border border-slate-800 bg-slate-900/20 p-3">
+              <div className="rounded-xl border border-slate-200 bg-white/60 p-3 dark:border-slate-800 dark:bg-slate-900/30">
                 <div className="flex items-center justify-between gap-2">
                   <div className="font-medium text-sm">{t('admissionForm')}</div>
                   <Tag kind={student.admission_submitted_at ? 'good' : 'warn'}>
@@ -365,9 +381,9 @@ export function StudentProfileModal({
                   </Tag>
                 </div>
 
-                <div className="mt-2 text-xs text-slate-400">
+                <div className="mt-2 text-xs text-slate-600 dark:text-slate-400">
                   {t('admissionLinkExpires')}{' '}
-                  <span className="text-slate-200">
+                  <span className="text-slate-900 dark:text-slate-200">
                     {student.admission_token_expires_at
                       ? formatLocalDateTime(student.admission_token_expires_at, intlLocale)
                       : t('admissionNoActiveLink')}
@@ -375,6 +391,19 @@ export function StudentProfileModal({
                 </div>
 
                 <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
+                  {activation && (!activation.hasSeat || !activation.paidThisMonth) ? (
+                    <button
+                      className="sr-btn"
+                      type="button"
+                      onClick={() => {
+                        setMode('edit')
+                        setFocusField('seat')
+                      }}
+                    >
+                      {t('startActivation')}
+                    </button>
+                  ) : null}
+
                   <button
                     className="sr-btn"
                     type="button"
@@ -437,7 +466,8 @@ export function StudentProfileModal({
                     type="button"
                     onClick={async () => {
                       try {
-                        const raw = String(student.mobile ?? '').replace(/\s+/g, '').trim()
+                        const digits = String(student.mobile ?? '').replace(/\D+/g, '').trim()
+                        const raw = digits.length >= 10 ? digits.slice(-10) : ''
                         if (!/^\d{10}$/.test(raw)) throw new Error(t('errMobile10Digits'))
 
                         const token = getValidAdmissionToken(student) ?? (await ensureAdmissionLink(student.id))
@@ -460,6 +490,62 @@ export function StudentProfileModal({
                     {t('printAdmissionForm')}
                   </Link>
                 </div>
+
+                {activation ? (
+                  <div className="mt-3 rounded-xl border border-slate-200 bg-white/60 p-3 text-sm dark:border-slate-800 dark:bg-slate-900/30">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="font-medium">{t('activationChecklist')}</div>
+                      {activation.hasSeat && activation.hasFee && activation.paidThisMonth ? (
+                        <Tag kind="good">{t('activationComplete')}</Tag>
+                      ) : (
+                        <Tag kind="warn">{t('activationPending')}</Tag>
+                      )}
+                    </div>
+
+                    <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
+                      <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white/70 px-2 py-2 dark:border-slate-800 dark:bg-slate-900/40">
+                        <div>
+                          <div className="font-medium">{t('checkSeatAssigned')}</div>
+                          <div className="text-xs text-slate-600 dark:text-slate-400">{activation.hasSeat ? t('done') : t('pending')}</div>
+                        </div>
+                        {!activation.hasSeat ? (
+                          <button
+                            type="button"
+                            className="sr-btn-sm"
+                            onClick={() => {
+                              setMode('edit')
+                              setFocusField('seat')
+                            }}
+                          >
+                            {t('assignSeat')}
+                          </button>
+                        ) : null}
+                      </div>
+
+                      <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white/70 px-2 py-2 dark:border-slate-800 dark:bg-slate-900/40">
+                        <div>
+                          <div className="font-medium">{t('checkPaymentThisMonth', { month: monthKey })}</div>
+                          <div className="text-xs text-slate-600 dark:text-slate-400">{activation.paidThisMonth ? t('done') : t('pending')}</div>
+                        </div>
+                        {!activation.paidThisMonth ? (
+                          <Link className="sr-btn-sm" to={`/payments?student=${student.id}`} onClick={onClose}>
+                            {t('recordPayment')}
+                          </Link>
+                        ) : null}
+                      </div>
+
+                      <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white/70 px-2 py-2 dark:border-slate-800 dark:bg-slate-900/40">
+                        <div>
+                          <div className="font-medium">{t('checkPrintForm')}</div>
+                          <div className="text-xs text-slate-600 dark:text-slate-400">{t('optional')}</div>
+                        </div>
+                        <Link className="sr-btn-sm" to={`/admission/print/${student.id}`} onClick={onClose}>
+                          {t('print')}
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
 
                 <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                   <Info label={t('submittedAt')} value={formatLocalDateTime(student.admission_submitted_at, intlLocale)} />

@@ -70,7 +70,7 @@ export function SeatsPage() {
         </Link>
       </div>
 
-      <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+      <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 sm:gap-3">
         {seatNumbers(seatsTotal).map((n) => {
           const st = seatMap.get(n) || ({ kind: 'available' } as SeatState)
           return <SeatCard key={n} seat={n} state={st} onClick={() => onSeatClick(n, st)} />
@@ -108,7 +108,7 @@ function SeatCard({
   onClick: () => void
 }) {
   const { t } = useI18n()
-  const base = 'sr-card p-3'
+  const base = 'sr-card p-2 sm:p-3'
   const cls =
     state.kind === 'available'
       ? `${base} border-emerald-600/30 bg-emerald-50/80 dark:border-emerald-500/25 dark:bg-emerald-500/5`
@@ -145,11 +145,11 @@ function SeatCard({
         </span>
       </div>
 
-      <div className="mt-2 text-sm">
+      <div className="mt-1 text-sm min-w-0">
         {state.kind === 'available' ? (
           <span className="text-slate-500 dark:text-slate-400">{t('available')}</span>
         ) : (
-          <span className="text-slate-900 dark:text-slate-100 font-medium">{state.name}</span>
+          <span className="text-slate-900 dark:text-slate-100 font-medium break-words leading-snug">{state.name}</span>
         )}
       </div>
 
@@ -159,7 +159,7 @@ function SeatCard({
         </div>
       ) : null}
 
-      <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+      <div className="mt-2 text-xs text-slate-500 dark:text-slate-400 hidden sm:block">
         {state.kind === 'available' ? t('clickToAssign') : t('clickToView')}
       </div>
     </button>

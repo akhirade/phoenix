@@ -1,5 +1,4 @@
-import React, { useMemo, useState } from 'react'
-import { useEffect } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useData } from '../lib/DataProvider'
 import { dueDayFromISODate, seatNumbers, todayISODate } from '../lib/utils'
@@ -49,6 +48,15 @@ export function StudentsPage() {
   useEffect(() => {
     const seat = searchParams.get('seat')
     const edit = searchParams.get('edit')
+    const profile = searchParams.get('profile')
+
+    if (profile) {
+      setProfileId(profile)
+      setProfileOpen(true)
+      setEditing(null)
+      setSeedSeat(null)
+      return
+    }
 
     if (edit) {
       const st = students.find((s) => s.id === edit)
@@ -169,6 +177,13 @@ export function StudentsPage() {
   function openProfile(s: Student) {
     setProfileId(s.id)
     setProfileOpen(true)
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.set('profile', s.id)
+      next.delete('seat')
+      next.delete('edit')
+      return next
+    })
   }
 
   return (
@@ -206,84 +221,140 @@ export function StudentsPage() {
             </div>
           </div>
 
-          <div className="mt-3 sr-table-wrap">
-            <table className="sr-table">
-              <thead className="sr-thead">
-                <tr>
-                  <th className="sr-th">{t('tableStudent')}</th>
-                  <th className="sr-th">{t('tableSeat')}</th>
-                  <th className="sr-th">{t('tableStatus')}</th>
-                  <th className="px-3 py-2"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {list.map((s) => (
-                  <tr key={s.id} className="border-t border-slate-800">
-                    <td className="sr-td">
-                      <div className="font-medium">{s.full_name}</div>
-                      <div className="text-xs text-slate-400">
+          <div className="mt-3">
+            {/* Mobile-first list view (prevents horizontal table overflow) */}
+            <div className="sm:hidden space-y-2">
+              {list.map((s) => (
+                <div
+                  key={s.id}
+                  className="rounded-xl border border-slate-200 bg-white/70 p-3 dark:border-slate-800 dark:bg-slate-900/20"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="font-medium truncate">{s.full_name}</div>
+                      <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400 break-words">
                         {s.mobile ?? ''}
                         {s.parent_contact ? ` • ${t('parent')}: ${s.parent_contact}` : ''}
                         {s.student_code ? ` • ${s.student_code}` : ''}
                       </div>
-                    </td>
-                    <td className="sr-td">{s.seat_number ?? '-'}</td>
-                    <td className="sr-td">
-                      <span
-                        className={
-                          'inline-flex items-center rounded-full border px-2 py-0.5 text-xs ' +
-                          (s.status === 'Active'
-                            ? 'border-emerald-600/30 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100'
-                            : 'border-rose-600/30 bg-rose-50 text-rose-800 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-100')
-                        }
-                      >
-                        {s.status === 'Active' ? t('active') : t('inactive')}
-                      </span>
-                    </td>
-                    <td className="sr-td text-right whitespace-nowrap">
-                      <button
-                        className="sr-btn-sm"
-                        onClick={() => openProfile(s)}
-                      >
-                        {t('view')}
-                      </button>
-                      <button
-                        className="ml-2 sr-btn-sm"
-                        onClick={() => startEdit(s)}
-                      >
-                        {t('edit')}
-                      </button>
-                      <button
-                        className="ml-2 sr-btn-sm"
-                        onClick={() =>
-                          setStudentStatus(s.id, s.status === 'Active' ? 'Inactive' : 'Active').catch((e) =>
-                            setError(e?.message || t('saveFailed')),
-                          )
-                        }
-                      >
-                        {s.status === 'Active' ? t('markInactive') : t('markActive')}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {list.length === 0 ? (
+                      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                        <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-slate-700 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-200">
+                          {t('seat')}: {s.seat_number ?? '-'}
+                        </span>
+                        <span
+                          className={
+                            'inline-flex items-center rounded-full border px-2 py-0.5 ' +
+                            (s.status === 'Active'
+                              ? 'border-emerald-600/30 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100'
+                              : 'border-rose-600/30 bg-rose-50 text-rose-800 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-100')
+                          }
+                        >
+                          {s.status === 'Active' ? t('active') : t('inactive')}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button className="sr-btn-sm" onClick={() => openProfile(s)}>
+                      {t('view')}
+                    </button>
+                    <button className="sr-btn-sm" onClick={() => startEdit(s)}>
+                      {t('edit')}
+                    </button>
+                    <button
+                      className="sr-btn-sm"
+                      onClick={() =>
+                        setStudentStatus(s.id, s.status === 'Active' ? 'Inactive' : 'Active').catch((e) =>
+                          setError(e?.message || t('saveFailed')),
+                        )
+                      }
+                    >
+                      {s.status === 'Active' ? t('markInactive') : t('markActive')}
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+              {list.length === 0 ? <div className="px-1 py-3 text-slate-400">{t('noStudents')}</div> : null}
+            </div>
+
+            {/* Table view for larger screens */}
+            <div className="hidden sm:block sr-table-wrap">
+              <table className="sr-table">
+                <thead className="sr-thead">
                   <tr>
-                    <td className="px-3 py-4 text-slate-400" colSpan={4}>
-                      {t('noStudents')}
-                    </td>
+                    <th className="sr-th">{t('tableStudent')}</th>
+                    <th className="sr-th">{t('tableSeat')}</th>
+                    <th className="sr-th">{t('tableStatus')}</th>
+                    <th className="px-3 py-2"></th>
                   </tr>
-                ) : null}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {list.map((s) => (
+                    <tr key={s.id} className="border-t border-slate-800">
+                      <td className="sr-td">
+                        <div className="font-medium">{s.full_name}</div>
+                        <div className="text-xs text-slate-400">
+                          {s.mobile ?? ''}
+                          {s.parent_contact ? ` • ${t('parent')}: ${s.parent_contact}` : ''}
+                          {s.student_code ? ` • ${s.student_code}` : ''}
+                        </div>
+                      </td>
+                      <td className="sr-td">{s.seat_number ?? '-'}</td>
+                      <td className="sr-td">
+                        <span
+                          className={
+                            'inline-flex items-center rounded-full border px-2 py-0.5 text-xs ' +
+                            (s.status === 'Active'
+                              ? 'border-emerald-600/30 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100'
+                              : 'border-rose-600/30 bg-rose-50 text-rose-800 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-100')
+                          }
+                        >
+                          {s.status === 'Active' ? t('active') : t('inactive')}
+                        </span>
+                      </td>
+                      <td className="sr-td text-right whitespace-nowrap">
+                        <button className="sr-btn-sm" onClick={() => openProfile(s)}>
+                          {t('view')}
+                        </button>
+                        <button className="ml-2 sr-btn-sm" onClick={() => startEdit(s)}>
+                          {t('edit')}
+                        </button>
+                        <button
+                          className="ml-2 sr-btn-sm"
+                          onClick={() =>
+                            setStudentStatus(s.id, s.status === 'Active' ? 'Inactive' : 'Active').catch((e) =>
+                              setError(e?.message || t('saveFailed')),
+                            )
+                          }
+                        >
+                          {s.status === 'Active' ? t('markInactive') : t('markActive')}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {list.length === 0 ? (
+                    <tr>
+                      <td className="px-3 py-4 text-slate-400" colSpan={4}>
+                        {t('noStudents')}
+                      </td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           <div className="mt-2 text-xs text-slate-500">{t('totalSeatsEnforced', { n: seatsTotal })}</div>
         </div>
 
-        <div className={
-          'sr-card p-3 ' +
-          (editing ? 'border-sky-400/40 bg-sky-500/5 shadow-[0_0_0_1px_rgba(56,189,248,0.14)]' : '')
-        }>
+        <div
+          className={
+            'sr-card p-3 ' +
+            (editing ? 'border-sky-400/40 bg-sky-500/5 shadow-[0_0_0_1px_rgba(56,189,248,0.14)]' : '')
+          }
+        >
           <div className="flex items-start justify-between gap-3">
             <div>
               <div className="font-medium">{editing ? t('editStudent') : t('addStudent')}</div>
@@ -440,6 +511,11 @@ export function StudentsPage() {
         onClose={() => {
           setProfileOpen(false)
           setProfileId(null)
+          setSearchParams((prev) => {
+            const next = new URLSearchParams(prev)
+            next.delete('profile')
+            return next
+          })
         }}
       />
     </div>

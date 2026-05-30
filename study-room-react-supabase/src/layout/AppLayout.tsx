@@ -1,4 +1,5 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthProvider'
 import { useData } from '../lib/DataProvider'
 import { useTheme } from '../theme/ThemeProvider'
@@ -41,9 +42,42 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
 
 export function AppLayout() {
   const { signOut, session } = useAuth()
-  const { settings } = useData()
+  const { settings, students } = useData()
   const { theme, toggleTheme } = useTheme()
   const { locale, toggleLocale, t } = useI18n()
+  const navigate = useNavigate()
+
+  const storageKey = useMemo(() => {
+    const email = session?.user?.email || 'anon'
+    return `phoenix-admissions-seen-at:${email}`
+  }, [session?.user?.email])
+
+  const [seenAt, setSeenAt] = useState<number>(() => {
+    const raw = localStorage.getItem(storageKey)
+    const n = raw ? Number(raw) : 0
+    return Number.isFinite(n) ? n : 0
+  })
+
+  useEffect(() => {
+    const raw = localStorage.getItem(storageKey)
+    const n = raw ? Number(raw) : 0
+    setSeenAt(Number.isFinite(n) ? n : 0)
+  }, [storageKey])
+
+  const newAdmissionsCount = useMemo(() => {
+    if (!students?.length) return 0
+    return students.filter((s) => {
+      if (!s.admission_submitted_at) return false
+      const ts = Date.parse(String(s.admission_submitted_at))
+      return Number.isFinite(ts) && ts > seenAt
+    }).length
+  }, [students, seenAt])
+
+  const markAdmissionsSeen = () => {
+    const now = Date.now()
+    localStorage.setItem(storageKey, String(now))
+    setSeenAt(now)
+  }
 
   const year = new Date().getFullYear()
   const trademarkText = 'Phoenix™'
@@ -65,6 +99,23 @@ export function AppLayout() {
             ) : null}
           </div>
           <div className="flex items-center justify-end gap-2 shrink-0 flex-nowrap">
+            {newAdmissionsCount > 0 ? (
+              <button
+                className="sr-btn"
+                type="button"
+                onClick={() => {
+                  markAdmissionsSeen()
+                  navigate('/dashboard')
+                }}
+              >
+                <span className="inline-flex items-center gap-2">
+                  <span className="font-medium">{t('newAdmissions')}</span>
+                  <span className="inline-flex items-center rounded-full border border-emerald-600/30 bg-emerald-50 px-2 py-0.5 text-xs text-emerald-800 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-100">
+                    {t('countN', { n: newAdmissionsCount })}
+                  </span>
+                </span>
+              </button>
+            ) : null}
             <button className="sr-btn" type="button" onClick={toggleLocale} aria-label="Toggle language">
               {locale === 'en' ? t('langEnglish') : t('langMarathi')}
             </button>

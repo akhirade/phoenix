@@ -53,8 +53,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [students, setStudents] = useState<Student[]>([])
   const [payments, setPayments] = useState<Payment[]>([])
 
-  async function refreshAll() {
-    setLoading(true)
+  async function refreshAllInternal(opts?: { silent?: boolean }) {
+    const silent = !!opts?.silent
+    if (!silent) setLoading(true)
     try {
       const [{ data: settingsRow }, { data: st, error: stErr }, { data: pay, error: payErr }] =
         await Promise.all([
@@ -70,8 +71,12 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setStudents((st as any) ?? [])
       setPayments((pay as any) ?? [])
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
+  }
+
+  async function refreshAll() {
+    return refreshAllInternal({ silent: false })
   }
 
   async function refreshStudent(studentId: string) {
@@ -92,9 +97,22 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       return
     }
 
-    refreshAll().catch(() => {
+    refreshAllInternal({ silent: false }).catch(() => {
       setLoading(false)
     })
+  }, [session, authLoading])
+
+  useEffect(() => {
+    if (authLoading) return
+    if (!session) return
+
+    const id = window.setInterval(() => {
+      refreshAllInternal({ silent: true }).catch(() => {
+        // ignore background refresh errors
+      })
+    }, 30_000)
+
+    return () => window.clearInterval(id)
   }, [session, authLoading])
 
   async function saveSettings(next: AppSettings) {
