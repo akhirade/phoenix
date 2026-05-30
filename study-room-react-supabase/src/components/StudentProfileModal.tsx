@@ -131,7 +131,7 @@ export function StudentProfileModal({
       {student ? (
         <div ref={bodyRef} className="space-y-3">
           {mode === 'edit' ? (
-            <div className="rounded-xl border border-sky-400/30 bg-sky-500/10 p-3 text-sm text-slate-100">
+            <div className="rounded-xl border border-sky-400/30 bg-sky-500/10 p-3 text-sm text-slate-900 dark:text-slate-100">
               {t('editing')} <span className="font-semibold">{student.full_name}</span>
               {student.seat_number ? ` • ${t('seatLabel', { n: student.seat_number })}` : ''}
             </div>
@@ -171,6 +171,13 @@ export function StudentProfileModal({
 
                   if (!fullName) throw new Error(t('errFullNameRequired'))
                   if (dueDay < 1 || dueDay > 28) throw new Error(t('errDueDayRange28'))
+
+                  const mobileClean = String(mobile || '').replace(/\D+/g, '').trim()
+                  const dupMobile = students.find(
+                    (s) => s.id !== student.id && String(s.mobile || '').replace(/\D+/g, '').trim() === mobileClean,
+                  )
+                  if (dupMobile) throw new Error(t('errMobileAlreadyUsed', { name: dupMobile.full_name }))
+
                   if (status === 'Inactive') seatNumber = null
                   if (status === 'Active' && !seatNumber) throw new Error(t('errSeatRequiredActive'))
 
@@ -198,7 +205,24 @@ export function StudentProfileModal({
                   toast.success(t('studentUpdated'))
                   setMode('profile')
                 } catch (err) {
-                  const msg = err instanceof Error ? err.message : t('errFailedUpdateStudent')
+                  const anyErr = err as any
+                  const raw =
+                    String(anyErr?.message || '') +
+                    ' ' +
+                    String(anyErr?.details || '') +
+                    ' ' +
+                    String(anyErr?.hint || '')
+
+                  const code = String(anyErr?.code || anyErr?.error?.code || '')
+                  const isDupMobile =
+                    code === '23505' &&
+                    (/students_mobile_unique/i.test(raw) || /mobile number already used/i.test(raw) || /duplicate key value/i.test(raw))
+
+                  const msg = isDupMobile
+                    ? t('errMobileAlreadyUsedGeneric')
+                    : err instanceof Error
+                      ? err.message
+                      : t('errFailedUpdateStudent')
                   setError(msg)
                   toast.error(msg)
                 } finally {
@@ -341,6 +365,15 @@ export function StudentProfileModal({
                   </Tag>
                 </div>
 
+                <div className="mt-2 text-xs text-slate-400">
+                  {t('admissionLinkExpires')}{' '}
+                  <span className="text-slate-200">
+                    {student.admission_token_expires_at
+                      ? formatLocalDateTime(student.admission_token_expires_at, intlLocale)
+                      : t('admissionNoActiveLink')}
+                  </span>
+                </div>
+
                 <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
                   <button
                     className="sr-btn"
@@ -365,6 +398,25 @@ export function StudentProfileModal({
                     type="button"
                     onClick={async () => {
                       try {
+                        const token = await ensureAdmissionLink(student.id)
+                        const base = new URL(import.meta.env.BASE_URL || '/', window.location.origin)
+                        const url = new URL(`admission/${token}`, base).toString()
+                        await navigator.clipboard.writeText(url)
+                        toast.success(t('admissionLinkRegenerated'))
+                      } catch (e: unknown) {
+                        const msg = e instanceof Error ? e.message : 'Failed'
+                        toast.error(msg)
+                      }
+                    }}
+                  >
+                    {t('regenerateAdmissionLink')}
+                  </button>
+
+                  <button
+                    className="sr-btn"
+                    type="button"
+                    onClick={async () => {
+                      try {
                         const token = getValidAdmissionToken(student) ?? (await ensureAdmissionLink(student.id))
 
                         const base = new URL(import.meta.env.BASE_URL || '/', window.location.origin)
@@ -378,6 +430,30 @@ export function StudentProfileModal({
                     }}
                   >
                     {t('copyAdmissionLink')}
+                  </button>
+
+                  <button
+                    className="sr-btn"
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const raw = String(student.mobile ?? '').replace(/\s+/g, '').trim()
+                        if (!/^\d{10}$/.test(raw)) throw new Error(t('errMobile10Digits'))
+
+                        const token = getValidAdmissionToken(student) ?? (await ensureAdmissionLink(student.id))
+                        const base = new URL(import.meta.env.BASE_URL || '/', window.location.origin)
+                        const link = new URL(`admission/${token}`, base).toString()
+
+                        const text = `${(settings.centerName || t('appName')).trim()}\nAdmission Form Link:\n${link}`
+                        const wa = `https://wa.me/91${raw}?text=${encodeURIComponent(text)}`
+                        window.open(wa, '_blank', 'noopener,noreferrer')
+                      } catch (e: unknown) {
+                        const msg = e instanceof Error ? e.message : 'Failed'
+                        toast.error(msg)
+                      }
+                    }}
+                  >
+                    {t('sendWhatsApp')}
                   </button>
 
                   <Link className="sr-btn" to={`/admission/print/${student.id}`} onClick={onClose}>

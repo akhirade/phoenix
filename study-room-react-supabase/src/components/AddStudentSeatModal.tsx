@@ -141,6 +141,12 @@ export function AddStudentSeatModal({
       if (!name) throw new Error(t('errFullNameRequired'))
       if (due < 1 || due > 28) throw new Error(t('errDueDayRange28'))
 
+      const mobileClean = String(phone || '').replace(/\D+/g, '').trim()
+      const dupMobile = students.find(
+        (s) => s.id !== (selectedStudentId ?? undefined) && String(s.mobile || '').replace(/\D+/g, '').trim() === mobileClean,
+      )
+      if (dupMobile) throw new Error(t('errMobileAlreadyUsed', { name: dupMobile.full_name }))
+
       await upsertStudent({
         id: selectedStudentId ?? undefined,
         full_name: name,
@@ -157,8 +163,27 @@ export function AddStudentSeatModal({
       toast.success(selectedStudentId ? t('studentUpdated') : t('studentAdded'))
       resetFormState()
       onClose()
-    } catch (err: any) {
-      setError(err?.message || t('saveFailed'))
+    } catch (err: unknown) {
+      const anyErr = err as any
+      const raw =
+        String(anyErr?.message || '') +
+        ' ' +
+        String(anyErr?.details || '') +
+        ' ' +
+        String(anyErr?.hint || '')
+
+      const code = String(anyErr?.code || anyErr?.error?.code || '')
+      const isDupMobile =
+        code === '23505' &&
+        (/students_mobile_unique/i.test(raw) || /mobile number already used/i.test(raw) || /duplicate key value/i.test(raw))
+
+      const msg = isDupMobile
+        ? t('errMobileAlreadyUsedGeneric')
+        : err instanceof Error
+          ? err.message
+          : t('saveFailed')
+
+      setError(msg)
     } finally {
       setBusy(false)
     }

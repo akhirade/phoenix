@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../auth/AuthProvider'
+import { useData } from '../lib/DataProvider'
 import { useTheme } from '../theme/ThemeProvider'
 import { useI18n } from '../i18n/I18nProvider'
 
@@ -40,6 +41,7 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
 
 export function AppLayout() {
   const { signOut, session } = useAuth()
+  const { settings } = useData()
   const { theme, toggleTheme } = useTheme()
   const { locale, toggleLocale, t } = useI18n()
 
@@ -54,7 +56,7 @@ export function AppLayout() {
           <div>
             <div className="flex items-center gap-2">
               <PhoenixLogo className="h-8 w-8 text-rose-600 dark:text-rose-400" />
-              <div className="font-semibold">{t('appName')}</div>
+              <div className="font-semibold">{(settings.centerName || t('appName')).trim()}</div>
             </div>
             {session?.user?.email ? (
               <div className="text-xs text-slate-600 dark:text-slate-400">

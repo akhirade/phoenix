@@ -7,6 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "check": "npm run build",
+    "check:full": "npm run lint && npm run build",
+    "db:migrations:print": "node scripts/db-print-migrations.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

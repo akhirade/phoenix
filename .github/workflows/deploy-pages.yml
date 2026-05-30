@@ -34,13 +34,24 @@ jobs:
       - name: Install
         run: npm ci
 
-      - name: Build
+      - name: Validate required env
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "${VITE_SUPABASE_URL}" ] || [ -z "${VITE_SUPABASE_ANON_KEY}" ]; then
+            echo "Missing GitHub Actions secrets: VITE_SUPABASE_URL and/or VITE_SUPABASE_ANON_KEY"
+            echo "Add them in: Settings → Secrets and variables → Actions"
+            exit 1
+          fi
+
+      - name: Check (build)
         env:
           # GitHub Pages project URL is https://<user>.github.io/<repo>/
           VITE_BASE: /${{ github.event.repository.name }}/
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-        run: npm run build
+        run: npm run check
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

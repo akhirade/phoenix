@@ -1,50 +1,8 @@
--- Study Room Manager (shared) schema
--- Run this in Supabase SQL Editor.
+-- 002_admission_form.sql
+-- Admission form fields + public RPCs for one-time token flow.
+-- Safe to run multiple times.
 
--- Enable UUID generation
-create extension if not exists pgcrypto;
-
--- App settings (single row: id = 'default')
-create table if not exists public.app_settings (
-  id text primary key,
-  value jsonb not null default '{}'::jsonb,
-  updated_at timestamptz not null default now(),
-  created_at timestamptz not null default now()
-);
-
--- Students
-create table if not exists public.students (
-  id uuid primary key default gen_random_uuid(),
-  student_code text unique,
-  full_name text not null,
-  mobile text,
-  email text,
-  birth_date date,
-  gender text,
-  parent_contact text,
-  emergency_contact text,
-  id_proof text,
-  address text,
-  preparing_exam text,
-  first_payment_receipt_no text,
-  joining_date date,
-  seat_number int,
-  monthly_fee int not null default 0,
-  due_day int not null default 5,
-  status text not null default 'Active',
-  notes text,
-
-  admission_token text,
-  admission_token_expires_at timestamptz,
-  admission_signature_name text,
-  admission_terms_accepted_at timestamptz,
-  admission_submitted_at timestamptz,
-
-  updated_at timestamptz not null default now(),
-  created_at timestamptz not null default now()
-);
-
--- Optional upgrades (safe to re-run)
+-- Add admission + profile fields
 alter table public.students add column if not exists email text;
 alter table public.students add column if not exists birth_date date;
 alter table public.students add column if not exists gender text;
@@ -61,59 +19,7 @@ create unique index if not exists students_admission_token_unique
 on public.students (admission_token)
 where admission_token is not null;
 
--- Unique mobile number (normalized digits) for data quality
--- NOTE: Creating this index will fail if duplicates already exist.
-create unique index if not exists students_mobile_unique
-on public.students ((regexp_replace(coalesce(mobile, ''), '\\D+', '', 'g')))
-where regexp_replace(coalesce(mobile, ''), '\\D+', '', 'g') <> '';
-
--- One active student per seat (business rule)
-create unique index if not exists students_unique_active_seat
-on public.students (seat_number)
-where status = 'Active' and seat_number is not null;
-
--- Payments (keep history even if student changes/deletes)
-create table if not exists public.payments (
-  id uuid primary key default gen_random_uuid(),
-  student_id uuid references public.students(id) on delete set null,
-  student_name text not null,
-  seat_number int,
-  month text not null, -- YYYY-MM
-  amount_paid int not null,
-  payment_date date not null,
-  payment_mode text not null,
-  transaction_id text,
-  remarks text,
-  status text,
-  created_at timestamptz not null default now()
-);
-
-create index if not exists payments_student_id_idx on public.payments(student_id);
-create index if not exists payments_month_idx on public.payments(month);
-
--- updated_at trigger for students and app_settings
-create or replace function public.set_updated_at()
-returns trigger language plpgsql as $$
-begin
-  new.updated_at = now();
-  return new;
-end;
-$$;
-
-drop trigger if exists trg_students_updated_at on public.students;
-create trigger trg_students_updated_at
-before update on public.students
-for each row execute function public.set_updated_at();
-
-drop trigger if exists trg_settings_updated_at on public.app_settings;
-create trigger trg_settings_updated_at
-before update on public.app_settings
-for each row execute function public.set_updated_at();
-
--- Public admission form helpers
--- These functions let a student fill the admission form via a link token,
--- without exposing full table access to anonymous users.
-
+-- Public admission context RPC
 create or replace function public.get_admission_context(p_token text)
 returns jsonb
 language plpgsql
@@ -176,6 +82,7 @@ begin
 end;
 $$;
 
+-- Public admission submit RPC (with validation)
 create or replace function public.submit_admission_form(
   p_token text,
   p_full_name text,
@@ -265,6 +172,5 @@ begin
 end;
 $$;
 
--- Allow public (anon) usage for student-filled admission links.
 grant execute on function public.get_admission_context(text) to anon;
 grant execute on function public.submit_admission_form(text, text, date, text, text, text, text, text, text, text, text, text, boolean) to anon;

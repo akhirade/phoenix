@@ -147,7 +147,10 @@ function AdmissionPublicForm({
     try {
       if (!token) throw new Error(t('errInvalidLink'))
       if (!fullName.trim()) throw new Error(t('errFullNameRequired'))
-      if (!/^\d{10}$/.test(mobile.replace(/\s+/g, '').trim())) throw new Error(t('errMobile10Digits'))
+      const mobileClean = mobile.replace(/\D+/g, '').trim()
+      if (!/^\d{10}$/.test(mobileClean)) throw new Error(t('errMobile10Digits'))
+      if (!address.trim()) throw new Error(t('errAddressRequired'))
+      if (!gender.trim()) throw new Error(t('errGenderRequired'))
       if (!acceptTerms) throw new Error(t('errAcceptTerms'))
 
       const { error } = await supabase.rpc('submit_admission_form', {
@@ -155,7 +158,7 @@ function AdmissionPublicForm({
         p_full_name: fullName.trim(),
         p_birth_date: birthDate || null,
         p_gender: gender || null,
-        p_mobile: mobile.replace(/\s+/g, '').trim(),
+        p_mobile: mobileClean,
         p_email: email.trim() || null,
         p_address: address.trim() || null,
         p_emergency_contact: emergencyContact.trim() || null,
@@ -169,7 +172,19 @@ function AdmissionPublicForm({
 
       setSubmitted(true)
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : t('errSubmitFailed')
+      const anyErr = e as any
+      const raw = String((anyErr && anyErr.message) || '')
+      const isDupMobile =
+        anyErr?.code === '23505' ||
+        /students_mobile_unique/i.test(raw) ||
+        /mobile number already used/i.test(raw)
+
+      const msg = isDupMobile
+        ? t('errMobileAlreadyUsedGeneric')
+        : e instanceof Error
+          ? e.message
+          : t('errSubmitFailed')
+
       onError(msg)
     } finally {
       setBusy(false)
@@ -197,7 +212,15 @@ function AdmissionPublicForm({
           <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">
             {t('mobile')} <span className="text-rose-400">*</span>
           </label>
-          <input className="sr-input" value={mobile} onChange={(e) => setMobile(e.target.value)} required />
+          <input
+            className="sr-input"
+            value={mobile}
+            onChange={(e) => setMobile(e.target.value)}
+            inputMode="numeric"
+            pattern="\\d{10}"
+            maxLength={10}
+            required
+          />
         </div>
       </div>
 
@@ -220,7 +243,7 @@ function AdmissionPublicForm({
 
       <div>
         <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">{t('gender')}</label>
-        <select className="sr-select" value={gender} onChange={(e) => setGender(e.target.value)}>
+        <select className="sr-select" value={gender} onChange={(e) => setGender(e.target.value)} required>
           <option value="">{t('select')}</option>
           <option value="Male">{t('male')}</option>
           <option value="Female">{t('female')}</option>
@@ -230,7 +253,7 @@ function AdmissionPublicForm({
 
       <div>
         <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">{t('address')}</label>
-        <textarea className="sr-textarea" rows={3} value={address} onChange={(e) => setAddress(e.target.value)} />
+        <textarea className="sr-textarea" rows={3} value={address} onChange={(e) => setAddress(e.target.value)} required />
       </div>
 
       <div>

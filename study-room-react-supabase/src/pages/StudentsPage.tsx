@@ -98,6 +98,12 @@ export function StudentsPage() {
       if (!payload.mobile) throw new Error(t('errMobileRequired'))
       if (payload.due_day! < 1 || payload.due_day! > 28) throw new Error(t('errDueDayRange28'))
 
+      const mobileClean = String(payload.mobile || '').replace(/\D+/g, '').trim()
+      const dup = students.find(
+        (s) => s.id !== payload.id && String(s.mobile || '').replace(/\D+/g, '').trim() === mobileClean,
+      )
+      if (dup) throw new Error(t('errMobileAlreadyUsed', { name: dup.full_name }))
+
       if (payload.status === 'Inactive') payload.seat_number = null
 
       if (payload.status === 'Active' && !payload.seat_number) {
@@ -122,8 +128,27 @@ export function StudentsPage() {
         return next
       })
       form.reset()
-    } catch (err: any) {
-      setError(err?.message || t('saveFailed'))
+    } catch (err: unknown) {
+      const anyErr = err as any
+      const raw =
+        String(anyErr?.message || '') +
+        ' ' +
+        String(anyErr?.details || '') +
+        ' ' +
+        String(anyErr?.hint || '')
+
+      const code = String(anyErr?.code || anyErr?.error?.code || '')
+      const isDupMobile =
+        code === '23505' &&
+        (/students_mobile_unique/i.test(raw) || /mobile number already used/i.test(raw) || /duplicate key value/i.test(raw))
+
+      const msg = isDupMobile
+        ? t('errMobileAlreadyUsedGeneric')
+        : err instanceof Error
+          ? err.message
+          : t('saveFailed')
+
+      setError(msg)
     } finally {
       setBusy(false)
     }

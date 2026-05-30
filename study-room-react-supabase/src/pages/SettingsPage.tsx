@@ -5,7 +5,17 @@ import { useI18n } from '../i18n/I18nProvider'
 import type { AppSettings } from '../lib/types'
 
 export function SettingsPage() {
-  const { settings, saveSettings } = useData()
+  const { settings, saveSettings, students } = useData()
+
+  const maxAssignedSeat = useMemo(() => {
+    let max = 0
+    for (const s of students) {
+      if (s.status !== 'Active') continue
+      const n = Number(s.seat_number || 0)
+      if (Number.isFinite(n) && n > max) max = n
+    }
+    return max
+  }, [students])
 
   const key = useMemo(
     () =>
@@ -27,15 +37,24 @@ export function SettingsPage() {
     ],
   )
 
-  return <SettingsEditor key={key} settings={settings} saveSettings={saveSettings} />
+  return (
+    <SettingsEditor
+      key={key}
+      settings={settings}
+      saveSettings={saveSettings}
+      maxAssignedSeat={maxAssignedSeat}
+    />
+  )
 }
 
 function SettingsEditor({
   settings,
   saveSettings,
+  maxAssignedSeat,
 }: {
   settings: AppSettings
   saveSettings: (next: AppSettings) => Promise<void>
+  maxAssignedSeat: number
 }) {
   const toast = useToast()
   const { t } = useI18n()
@@ -59,6 +78,9 @@ function SettingsEditor({
       const seats = Number(totalSeats || 45)
       if (d < 1 || d > 28) throw new Error(t('errDueDayRange'))
       if (!Number.isFinite(seats) || seats < 1 || seats > 500) throw new Error(t('errTotalSeatsRange'))
+      if (maxAssignedSeat > 0 && seats < maxAssignedSeat) {
+        throw new Error(t('errTotalSeatsBelowAssigned', { n: maxAssignedSeat }))
+      }
       await saveSettings({
         defaultMonthlyFee: f,
         defaultDueDay: d,
@@ -123,6 +145,11 @@ function SettingsEditor({
               value={totalSeats}
               onChange={(e) => setTotalSeats(e.target.value)}
             />
+            {maxAssignedSeat > 0 ? (
+              <div className="mt-1 text-[11px] text-slate-500">
+                {t('maxSeatInUse', { n: maxAssignedSeat })}
+              </div>
+            ) : null}
           </div>
         </div>
         <div className="mt-3 flex justify-end">
