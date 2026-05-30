@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo } from 'react'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useData } from '../lib/DataProvider'
 import { useI18n } from '../i18n/I18nProvider'
 import { formatLocalDate, formatLocalDateTime } from '../lib/utils'
 
 export function AdmissionPrintPage() {
   const { studentId } = useParams()
+  const navigate = useNavigate()
   const { students, settings } = useData()
   const { t, locale } = useI18n()
 
@@ -32,6 +33,24 @@ export function AdmissionPrintPage() {
     return <div className="text-sm text-slate-400">{t('studentNotFound')}</div>
   }
 
+  const goBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1)
+      return
+    }
+    navigate('/dashboard')
+  }
+
+  const closePage = () => {
+    try {
+      window.close()
+    } catch {
+      // ignore
+    }
+    // If the browser blocks window.close(), fall back.
+    window.setTimeout(() => goBack(), 50)
+  }
+
   return (
     <div className="sr-card p-4 sr-print">
       <div className="flex items-start justify-between gap-3 print:hidden">
@@ -39,9 +58,17 @@ export function AdmissionPrintPage() {
           <div className="sr-title">{t('admissionFormTitle')}</div>
           <div className="sr-subtitle">{student.full_name}</div>
         </div>
-        <button className="sr-btn-primary" onClick={() => window.print()}>
-          {t('print')}
-        </button>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <button className="sr-btn" type="button" onClick={goBack}>
+            {t('back')}
+          </button>
+          <button className="sr-btn" type="button" onClick={closePage}>
+            {t('close')}
+          </button>
+          <button className="sr-btn-primary" type="button" onClick={() => window.print()}>
+            {t('print')}
+          </button>
+        </div>
       </div>
 
       <div className="mt-3">
