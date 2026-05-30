@@ -348,7 +348,8 @@ export function StudentProfileModal({
                     onClick={async () => {
                       try {
                         const token = getValidAdmissionToken(student) ?? (await ensureAdmissionLink(student.id))
-                        const url = `${window.location.origin}/admission/${token}`
+                        const base = new URL(import.meta.env.BASE_URL || '/', window.location.origin)
+                        const url = new URL(`admission/${token}`, base).toString()
                         window.location.assign(url)
                       } catch (e: unknown) {
                         const msg = e instanceof Error ? e.message : 'Failed'
@@ -366,7 +367,8 @@ export function StudentProfileModal({
                       try {
                         const token = getValidAdmissionToken(student) ?? (await ensureAdmissionLink(student.id))
 
-                        const url = `${window.location.origin}/admission/${token}`
+                        const base = new URL(import.meta.env.BASE_URL || '/', window.location.origin)
+                        const url = new URL(`admission/${token}`, base).toString()
                         await navigator.clipboard.writeText(url)
                         toast.success(t('admissionLinkCopied'))
                       } catch (e: unknown) {

@@ -56,11 +56,13 @@ export function AppLayout() {
               <PhoenixLogo className="h-8 w-8 text-rose-600 dark:text-rose-400" />
               <div className="font-semibold">{t('appName')}</div>
             </div>
-            <div className="text-xs text-slate-600 dark:text-slate-400">
-              {t('headerSharedSignedInAs', { email: session?.user.email ?? '' })}
-            </div>
+            {session?.user?.email ? (
+              <div className="text-xs text-slate-600 dark:text-slate-400">
+                {t('headerLoggedInAs', { email: session.user.email })}
+              </div>
+            ) : null}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-end gap-2 shrink-0 flex-nowrap">
             <button className="sr-btn" type="button" onClick={toggleLocale} aria-label="Toggle language">
               {locale === 'en' ? t('langEnglish') : t('langMarathi')}
             </button>
@@ -69,6 +71,7 @@ export function AppLayout() {
             </button>
             <button
               className="sr-btn"
+              type="button"
               onClick={() => signOut()}
             >
               {t('logout')}

@@ -214,6 +214,7 @@ const MESSAGES = {
     errSubmitFailed: 'Could not submit form',
 
     headerSharedSignedInAs: 'Shared (Supabase) • Signed in as {{email}}',
+    headerLoggedInAs: 'Logged in as {{email}}',
     logout: 'Logout',
 
     themeLight: 'Light',
@@ -437,6 +438,7 @@ const MESSAGES = {
     errSubmitFailed: 'फॉर्म सबमिट झाला नाही',
 
     headerSharedSignedInAs: 'Shared (Supabase) • {{email}} ने साइन इन केले',
+    headerLoggedInAs: '{{email}} ने लॉगिन केले',
     logout: 'लॉगआउट',
 
     themeLight: 'लाइट',
