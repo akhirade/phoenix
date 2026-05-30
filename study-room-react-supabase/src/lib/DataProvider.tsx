@@ -102,19 +102,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     })
   }, [session, authLoading])
 
-  useEffect(() => {
-    if (authLoading) return
-    if (!session) return
-
-    const id = window.setInterval(() => {
-      refreshAllInternal({ silent: true }).catch(() => {
-        // ignore background refresh errors
-      })
-    }, 30_000)
-
-    return () => window.clearInterval(id)
-  }, [session, authLoading])
-
   async function saveSettings(next: AppSettings) {
     setSettings(next)
     const { error } = await supabase
