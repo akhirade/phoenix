@@ -136,7 +136,7 @@ export function DashboardPage() {
         <KpiCard label={t('statPendingPayments')} value={String(stats.pendingCount)} />
       </div>
 
-      <div className="mt-4">
+      <div className="mt-6">
         <div className="sr-title">{t('todaysActions')}</div>
         <div className="sr-subtitle">{t('todaysActionsSubtitle', { day: todayDay })}</div>
 
@@ -149,6 +149,7 @@ export function DashboardPage() {
           >
             <ActionList
               emptyLabel={t('nothingDueToday')}
+              emptyAction={{ label: t('navPayments'), to: '/payments' }}
               items={actions.dueToday.slice(0, 5).map((x) => ({
                 key: x.s.id,
                 title: x.s.full_name,
@@ -167,6 +168,7 @@ export function DashboardPage() {
           >
             <ActionList
               emptyLabel={t('noPendingFees')}
+              emptyAction={{ label: t('navReports'), to: '/reports' }}
               items={actions.pendingTop.slice(0, 5).map((x) => ({
                 key: x.s.id,
                 title: x.s.full_name,
@@ -185,6 +187,7 @@ export function DashboardPage() {
           >
             <ActionList
               emptyLabel={t('noStudentsWithoutSeat')}
+              emptyAction={{ label: t('navStudents'), to: '/students' }}
               items={actions.noSeat.slice(0, 5).map((s) => ({
                 key: s.id,
                 title: s.full_name,
@@ -197,6 +200,7 @@ export function DashboardPage() {
           <ActionCard title={t('expiringLinks')} subtitle={t('expiringLinksHint')} count={actions.expiringLinks.length}>
             <ActionList
               emptyLabel={t('noExpiringLinks')}
+              emptyAction={{ label: t('navStudents'), to: '/students' }}
               items={actions.expiringLinks.slice(0, 5).map((x) => ({
                 key: x.s.id,
                 title: x.s.full_name,
@@ -212,6 +216,7 @@ export function DashboardPage() {
           <ActionCard title={t('recentAdmissions')} subtitle={t('recentAdmissionsHint')} count={actions.recentAdmissions.length}>
             <ActionList
               emptyLabel={t('noRecentAdmissions')}
+              emptyAction={{ label: t('navStudents'), to: '/students' }}
               items={actions.recentAdmissions.slice(0, 5).map((x) => ({
                 key: x.s.id,
                 title: x.s.full_name,
@@ -298,6 +303,7 @@ function ActionCard({
 function ActionList({
   items,
   emptyLabel,
+  emptyAction,
 }: {
   items: Array<{
     key: string
@@ -307,9 +313,19 @@ function ActionList({
     secondary?: { label: string; to: string }
   }>
   emptyLabel: string
+  emptyAction?: { label: string; to: string }
 }) {
   if (!items.length) {
-    return <div className="text-sm text-slate-500 dark:text-slate-400">{emptyLabel}</div>
+    return (
+      <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-500 dark:text-slate-400">
+        <span>{emptyLabel}</span>
+        {emptyAction ? (
+          <Link className="sr-btn-sm" to={emptyAction.to}>
+            {emptyAction.label}
+          </Link>
+        ) : null}
+      </div>
+    )
   }
 
   return (

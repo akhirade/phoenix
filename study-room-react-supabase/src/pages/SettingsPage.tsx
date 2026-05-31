@@ -108,7 +108,7 @@ function SettingsEditor({
       </div>
 
       {msg ? (
-        <div className="mt-4 rounded-xl border border-slate-800 bg-slate-950/30 p-3 text-sm text-slate-200">
+        <div className="mt-4 sr-card-soft p-3 text-sm text-slate-700 dark:text-slate-200">
           {msg}
         </div>
       ) : null}

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useData } from '../lib/DataProvider'
 import { formatINR, formatLocalDate, monthKeyFromDate } from '../lib/utils'
 import { useI18n } from '../i18n/I18nProvider'
@@ -202,6 +203,20 @@ export function ReportsPage() {
         <div className="sr-subtitle">{t('reportsSubtitle')}</div>
       </div>
 
+      {active.length === 0 ? (
+        <div className="mt-4 sr-card-soft p-3">
+          <div className="font-medium text-sm">{t('noStudents')}</div>
+          <div className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+            Add active students (with seats) to see monthly reports.
+          </div>
+          <div className="mt-3">
+            <Link className="sr-btn-primary" to="/students">
+              {t('addStudent')}
+            </Link>
+          </div>
+        </div>
+      ) : null}
+
       <div className="mt-4 sr-card p-3">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
@@ -263,7 +278,7 @@ export function ReportsPage() {
             </thead>
             <tbody>
               {pendingDues.map((x) => (
-                <tr key={x.s.id} className="border-t border-slate-800">
+                <tr key={x.s.id} className="border-t border-slate-200 dark:border-slate-800">
                   <td className="sr-td whitespace-nowrap">{x.s.seat_number ?? '-'}</td>
                   <td className="sr-td">{x.s.full_name}</td>
                   <td className="sr-td whitespace-nowrap">{x.s.mobile ?? '-'}</td>
@@ -326,7 +341,7 @@ export function ReportsPage() {
               </thead>
               <tbody>
                 {ledgerPayments.map((p) => (
-                  <tr key={p.id} className="border-t border-slate-800">
+                  <tr key={p.id} className="border-t border-slate-200 dark:border-slate-800">
                     <td className="sr-td whitespace-nowrap">
                       {formatLocalDate(String(p.payment_date), locale === 'mr' ? 'mr-IN' : 'en-IN')}
                     </td>

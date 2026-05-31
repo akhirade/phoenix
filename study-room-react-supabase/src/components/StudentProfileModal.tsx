@@ -11,10 +11,16 @@ import { useI18n } from '../i18n/I18nProvider'
 export function StudentProfileModal({
   open,
   studentId,
+  initialMode,
+  initialFocusField,
+  prefillStatus,
   onClose,
 }: {
   open: boolean
   studentId: string | null
+  initialMode?: 'profile' | 'edit'
+  initialFocusField?: 'seat' | null
+  prefillStatus?: 'Active' | 'Inactive'
   onClose: () => void
 }) {
   const { students, payments, settings, upsertStudent, ensureAdmissionLink, refreshStudent } = useData()
@@ -93,13 +99,13 @@ export function StudentProfileModal({
   useEffect(() => {
     if (!open) return
     const id = window.setTimeout(() => {
-      setMode('profile')
-      setFocusField(null)
+      setMode(initialMode ?? 'profile')
+      setFocusField(initialFocusField ?? null)
       setBusy(false)
       setError(null)
     }, 0)
     return () => window.clearTimeout(id)
-  }, [open, studentId])
+  }, [open, studentId, initialMode, initialFocusField])
 
   useEffect(() => {
     if (!open) return
@@ -291,7 +297,14 @@ export function StudentProfileModal({
                 </div>
                 <div>
                   <label className="block text-xs text-slate-400 mb-1">{t('status')}</label>
-                  <select className="sr-select" name="status" defaultValue={student.status ?? 'Active'}>
+                  <select
+                    className="sr-select"
+                    name="status"
+                    defaultValue={prefillStatus ?? (student.status ?? 'Active')}
+                    onChange={(e) => {
+                      if (e.currentTarget.value === 'Active') setFocusField('seat')
+                    }}
+                  >
                     <option value="Active">{t('active')}</option>
                     <option value="Inactive">{t('inactive')}</option>
                   </select>
@@ -621,7 +634,7 @@ export function StudentProfileModal({
                       </thead>
                       <tbody>
                         {history.map((p) => (
-                          <tr key={p.id} className="border-t border-slate-800">
+                          <tr key={p.id} className="border-t border-slate-200 dark:border-slate-800">
                             <td className="sr-td whitespace-nowrap">{formatLocalDate(p.payment_date, intlLocale)}</td>
                             <td className="sr-td whitespace-nowrap">{p.month}</td>
                             <td className="sr-td whitespace-nowrap font-medium">{formatINR(Number(p.amount_paid || 0))}</td>

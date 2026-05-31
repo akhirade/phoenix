@@ -19,6 +19,11 @@ export function StudentsPage() {
   const [seedSeat, setSeedSeat] = useState<number | null>(null)
   const [profileId, setProfileId] = useState<string | null>(null)
   const [profileOpen, setProfileOpen] = useState(false)
+  const [profileInit, setProfileInit] = useState<{
+    mode?: 'profile' | 'edit'
+    focus?: 'seat' | null
+    prefillStatus?: 'Active' | 'Inactive'
+  }>({})
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -177,6 +182,20 @@ export function StudentsPage() {
   function openProfile(s: Student) {
     setProfileId(s.id)
     setProfileOpen(true)
+    setProfileInit({ mode: 'profile', focus: null, prefillStatus: undefined })
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.set('profile', s.id)
+      next.delete('seat')
+      next.delete('edit')
+      return next
+    })
+  }
+
+  function promptActivateAssignSeat(s: Student) {
+    setProfileId(s.id)
+    setProfileOpen(true)
+    setProfileInit({ mode: 'edit', focus: 'seat', prefillStatus: 'Active' })
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev)
       next.set('profile', s.id)
@@ -265,9 +284,11 @@ export function StudentsPage() {
                     <button
                       className="sr-btn-sm"
                       onClick={() =>
-                        setStudentStatus(s.id, s.status === 'Active' ? 'Inactive' : 'Active').catch((e) =>
-                          setError(e?.message || t('saveFailed')),
-                        )
+                        s.status === 'Active'
+                          ? setStudentStatus(s.id, 'Inactive').catch((e) => setError(e?.message || t('saveFailed')))
+                          : !s.seat_number
+                            ? promptActivateAssignSeat(s)
+                            : setStudentStatus(s.id, 'Active').catch((e) => setError(e?.message || t('saveFailed')))
                       }
                     >
                       {s.status === 'Active' ? t('markInactive') : t('markActive')}
@@ -292,7 +313,7 @@ export function StudentsPage() {
                 </thead>
                 <tbody>
                   {list.map((s) => (
-                    <tr key={s.id} className="border-t border-slate-800">
+                    <tr key={s.id} className="border-t border-slate-200 dark:border-slate-800">
                       <td className="sr-td">
                         <div className="font-medium">{s.full_name}</div>
                         <div className="text-xs text-slate-400">
@@ -324,9 +345,11 @@ export function StudentsPage() {
                         <button
                           className="ml-2 sr-btn-sm"
                           onClick={() =>
-                            setStudentStatus(s.id, s.status === 'Active' ? 'Inactive' : 'Active').catch((e) =>
-                              setError(e?.message || t('saveFailed')),
-                            )
+                            s.status === 'Active'
+                              ? setStudentStatus(s.id, 'Inactive').catch((e) => setError(e?.message || t('saveFailed')))
+                              : !s.seat_number
+                                ? promptActivateAssignSeat(s)
+                                : setStudentStatus(s.id, 'Active').catch((e) => setError(e?.message || t('saveFailed')))
                           }
                         >
                           {s.status === 'Active' ? t('markInactive') : t('markActive')}
@@ -365,7 +388,7 @@ export function StudentsPage() {
                 {t('editing')}
               </span>
             ) : (
-              <span className="inline-flex items-center rounded-full border border-slate-800 bg-slate-900/40 px-2 py-0.5 text-xs text-slate-200">
+              <span className="inline-flex items-center rounded-full border border-slate-200 bg-white/70 px-2 py-0.5 text-xs text-slate-700 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-200">
                 {t('new')}
               </span>
             )}
@@ -508,9 +531,13 @@ export function StudentsPage() {
       <StudentProfileModal
         open={profileOpen}
         studentId={profileId}
+        initialMode={profileInit.mode}
+        initialFocusField={profileInit.focus ?? null}
+        prefillStatus={profileInit.prefillStatus}
         onClose={() => {
           setProfileOpen(false)
           setProfileId(null)
+          setProfileInit({ mode: 'profile', focus: null, prefillStatus: undefined })
           setSearchParams((prev) => {
             const next = new URLSearchParams(prev)
             next.delete('profile')

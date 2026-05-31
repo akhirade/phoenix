@@ -145,7 +145,7 @@ export function PaymentsPage() {
                 </thead>
                 <tbody>
                   {unpaid.map((x) => (
-                    <tr key={x.s.id} className="border-t border-slate-800">
+                    <tr key={x.s.id} className="border-t border-slate-200 dark:border-slate-800">
                       <td className="sr-td">{x.s.full_name}</td>
                       <td className="sr-td">{x.s.seat_number}</td>
                       <td className="sr-td">{formatINR(x.paid)}</td>
@@ -183,7 +183,7 @@ export function PaymentsPage() {
                     .slice()
                     .sort((a, b) => String(b.payment_date).localeCompare(String(a.payment_date)))
                     .map((p) => (
-                      <tr key={p.id} className="border-t border-slate-800">
+                      <tr key={p.id} className="border-t border-slate-200 dark:border-slate-800">
                         <td className="sr-td whitespace-nowrap">
                           {formatLocalDate(String(p.payment_date), locale === 'mr' ? 'mr-IN' : 'en-IN')}
                         </td>
