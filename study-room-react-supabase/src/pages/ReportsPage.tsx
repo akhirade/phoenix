@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react'
 import { useData } from '../lib/DataProvider'
-import { formatINR, monthKeyFromDate } from '../lib/utils'
+import { formatINR, formatLocalDate, monthKeyFromDate } from '../lib/utils'
 import { useI18n } from '../i18n/I18nProvider'
 
 export function ReportsPage() {
   const { students, payments, settings } = useData()
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const [month, setMonth] = useState(monthKeyFromDate(new Date()))
   const [ledgerStudentId, setLedgerStudentId] = useState('')
 
@@ -327,7 +327,9 @@ export function ReportsPage() {
               <tbody>
                 {ledgerPayments.map((p) => (
                   <tr key={p.id} className="border-t border-slate-800">
-                    <td className="sr-td whitespace-nowrap">{p.payment_date}</td>
+                    <td className="sr-td whitespace-nowrap">
+                      {formatLocalDate(String(p.payment_date), locale === 'mr' ? 'mr-IN' : 'en-IN')}
+                    </td>
                     <td className="sr-td whitespace-nowrap">{p.month}</td>
                     <td className="sr-td whitespace-nowrap font-medium">{formatINR(Number(p.amount_paid || 0))}</td>
                     <td className="sr-td whitespace-nowrap">{p.payment_mode}</td>

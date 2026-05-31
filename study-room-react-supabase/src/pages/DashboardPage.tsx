@@ -1,12 +1,12 @@
-import { useMemo, type ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useData } from '../lib/DataProvider'
-import { formatINR, monthKeyFromDate } from '../lib/utils'
+import { formatINR, formatLocalDateTime, monthKeyFromDate } from '../lib/utils'
 import { useI18n } from '../i18n/I18nProvider'
 
 export function DashboardPage() {
   const { loading, students, payments, settings } = useData()
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const monthKey = monthKeyFromDate(new Date())
 
   const seatsTotal = Number(settings.totalSeats || 45)
@@ -36,7 +36,7 @@ export function DashboardPage() {
   }, [students, payments, monthKey, seatsTotal])
 
   const actions = useMemo(() => {
-    const now = Date.now()
+    const now = new Date().getTime()
     const weekAgo = now - 7 * 24 * 60 * 60 * 1000
     const soonMs = 48 * 60 * 60 * 1000
 
@@ -94,58 +94,95 @@ export function DashboardPage() {
       expiringLinks,
       recentAdmissions,
     }
-  }, [students, payments, settings.defaultMonthlyFee, monthKey, dueCutoffDay])
+  }, [students, payments, settings, monthKey, dueCutoffDay])
 
   return (
     <div>
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="sr-title">{t('dashboardTitle')}</div>
           <div className="sr-subtitle">{t('dashboardMonth', { month: monthKey })}</div>
         </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <Link className="sr-btn" to="/students">
+            {t('addStudent')}
+          </Link>
+          <Link className="sr-btn-primary" to="/payments">
+            {t('recordPayment')}
+          </Link>
+          <Link className="sr-btn" to="/seats">
+            {t('navSeats')}
+          </Link>
+        </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <Stat label={t('statTotalSeats')} value={String(seatsTotal)} />
-        <Stat label={t('statOccupied')} value={String(stats.occupied)} />
-        <Stat label={t('statAvailable')} value={String(stats.available)} />
-        <Stat label={t('statActiveStudents')} value={String(stats.activeCount)} />
-        <Stat label={t('statMonthlyCollection')} value={formatINR(stats.collected)} />
-        <Stat label={t('statPendingPayments')} value={String(stats.pendingCount)} />
+      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <KpiCard
+          label={t('statTotalSeats')}
+          value={
+            <span>
+              {stats.occupied}
+              <span className="text-slate-400 dark:text-slate-500">/{seatsTotal}</span>
+            </span>
+          }
+          meta={`${t('available')}: ${stats.available}`}
+        >
+          <ProgressBar value={stats.occupied} max={seatsTotal} />
+        </KpiCard>
+
+        <KpiCard label={t('statActiveStudents')} value={String(stats.activeCount)} />
+        <KpiCard label={t('statMonthlyCollection')} value={formatINR(stats.collected)} />
+        <KpiCard label={t('statPendingPayments')} value={String(stats.pendingCount)} />
       </div>
 
       <div className="mt-4">
         <div className="sr-title">{t('todaysActions')}</div>
         <div className="sr-subtitle">{t('todaysActionsSubtitle', { day: todayDay })}</div>
 
-        <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
-          <ActionCard title={t('dueToday')} subtitle={t('dueTodayHint')}>
+        <div className="mt-3 grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <ActionCard
+            title={t('dueToday')}
+            subtitle={t('dueTodayHint')}
+            count={actions.dueToday.length}
+            headerLink={{ label: t('navPayments'), to: '/payments' }}
+          >
             <ActionList
               emptyLabel={t('nothingDueToday')}
               items={actions.dueToday.slice(0, 5).map((x) => ({
                 key: x.s.id,
                 title: x.s.full_name,
-                meta: `${t('seatLabel', { n: x.s.seat_number })} • ${t('dueDayLabel', { n: x.s.due_day ?? '-' })} • ${t('dueAmountLabel', { amount: x.due })}`,
+                meta: `${t('seatLabel', { n: x.s.seat_number })} • ${t('dueDayLabel', { n: x.s.due_day ?? '-' })} • ${t('due')}: ${formatINR(x.due)}`,
                 primary: { label: t('recordPayment'), to: `/payments?student=${x.s.id}` },
                 secondary: { label: t('view'), to: `/students?profile=${x.s.id}` },
               }))}
             />
           </ActionCard>
 
-          <ActionCard title={t('pendingFees')} subtitle={t('pendingFeesHint')}>
+          <ActionCard
+            title={t('pendingFees')}
+            subtitle={t('pendingFeesHint')}
+            count={actions.pendingTop.length}
+            headerLink={{ label: t('navReports'), to: '/reports' }}
+          >
             <ActionList
               emptyLabel={t('noPendingFees')}
               items={actions.pendingTop.slice(0, 5).map((x) => ({
                 key: x.s.id,
                 title: x.s.full_name,
-                meta: `${t('seatLabel', { n: x.s.seat_number })} • ${t('dueAmountLabel', { amount: x.due })}`,
+                meta: `${t('seatLabel', { n: x.s.seat_number })} • ${t('due')}: ${formatINR(x.due)}`,
                 primary: { label: t('recordPayment'), to: `/payments?student=${x.s.id}` },
                 secondary: { label: t('view'), to: `/students?profile=${x.s.id}` },
               }))}
             />
           </ActionCard>
 
-          <ActionCard title={t('studentsWithoutSeat')} subtitle={t('studentsWithoutSeatHint')}>
+          <ActionCard
+            title={t('studentsWithoutSeat')}
+            subtitle={t('studentsWithoutSeatHint')}
+            count={actions.noSeat.length}
+            headerLink={{ label: t('navStudents'), to: '/students' }}
+          >
             <ActionList
               emptyLabel={t('noStudentsWithoutSeat')}
               items={actions.noSeat.slice(0, 5).map((s) => ({
@@ -157,13 +194,13 @@ export function DashboardPage() {
             />
           </ActionCard>
 
-          <ActionCard title={t('expiringLinks')} subtitle={t('expiringLinksHint')}>
+          <ActionCard title={t('expiringLinks')} subtitle={t('expiringLinksHint')} count={actions.expiringLinks.length}>
             <ActionList
               emptyLabel={t('noExpiringLinks')}
               items={actions.expiringLinks.slice(0, 5).map((x) => ({
                 key: x.s.id,
                 title: x.s.full_name,
-                meta: x.s.admission_token_expires_at ? String(x.s.admission_token_expires_at) : '',
+                meta: x.s.admission_token_expires_at ? formatLocalDateTime(String(x.s.admission_token_expires_at), locale === 'mr' ? 'mr-IN' : 'en-IN') : '',
                 primary: x.s.admission_token
                   ? { label: t('openAdmissionForm'), to: `/admission/${x.s.admission_token}` }
                   : undefined,
@@ -172,13 +209,13 @@ export function DashboardPage() {
             />
           </ActionCard>
 
-          <ActionCard title={t('recentAdmissions')} subtitle={t('recentAdmissionsHint')}>
+          <ActionCard title={t('recentAdmissions')} subtitle={t('recentAdmissionsHint')} count={actions.recentAdmissions.length}>
             <ActionList
               emptyLabel={t('noRecentAdmissions')}
               items={actions.recentAdmissions.slice(0, 5).map((x) => ({
                 key: x.s.id,
                 title: x.s.full_name,
-                meta: x.s.admission_submitted_at ? String(x.s.admission_submitted_at) : '',
+                meta: x.s.admission_submitted_at ? formatLocalDateTime(String(x.s.admission_submitted_at), locale === 'mr' ? 'mr-IN' : 'en-IN') : '',
                 primary: { label: t('view'), to: `/students?profile=${x.s.id}` },
                 secondary: { label: t('printAdmissionForm'), to: `/admission/print/${x.s.id}` },
               }))}
@@ -192,16 +229,68 @@ export function DashboardPage() {
   )
 }
 
-function ActionCard({ title, subtitle, children }: { title: string; subtitle: string; children: ReactNode }) {
+function ActionCard({
+  title,
+  subtitle,
+  count,
+  headerLink,
+  defaultOpen,
+  children,
+}: {
+  title: string
+  subtitle: string
+  count?: number
+  headerLink?: { label: string; to: string }
+  defaultOpen?: boolean
+  children: ReactNode
+}) {
+  const [open, setOpen] = useState(Boolean(defaultOpen))
+
   return (
     <div className="sr-card p-3">
       <div className="flex items-start justify-between gap-2">
-        <div>
-          <div className="font-semibold">{title}</div>
-          <div className="text-xs text-slate-500 dark:text-slate-400">{subtitle}</div>
+        <button
+          type="button"
+          className="text-left min-w-0"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+        >
+          <div className="flex items-center gap-2">
+            <div className="font-semibold">{title}</div>
+            {typeof count === 'number' ? (
+              <span className="inline-flex items-center rounded-full border border-slate-200 bg-white/70 px-2 py-0.5 text-xs text-slate-700 dark:border-slate-800 dark:bg-slate-950/20 dark:text-slate-300">
+                {count}
+              </span>
+            ) : null}
+          </div>
+          <div className="text-xs text-slate-500 dark:text-slate-400 truncate">{subtitle}</div>
+        </button>
+
+        <div className="flex items-center gap-2 shrink-0">
+          {headerLink ? (
+            <Link className="sr-btn-sm" to={headerLink.to}>
+              {headerLink.label}
+            </Link>
+          ) : null}
+          <button
+            className="sr-btn-sm"
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-label="Toggle"
+          >
+            <span
+              className={
+                'inline-block text-slate-500 dark:text-slate-400 transition-transform ' +
+                (open ? 'rotate-90' : '')
+              }
+              aria-hidden="true"
+            >
+              ▸
+            </span>
+          </button>
         </div>
       </div>
-      <div className="mt-2">{children}</div>
+      {open ? <div className="mt-2">{children}</div> : null}
     </div>
   )
 }
@@ -224,10 +313,10 @@ function ActionList({
   }
 
   return (
-    <div className="space-y-2">
+    <div className="rounded-xl border border-slate-200 bg-white/60 overflow-hidden divide-y divide-slate-200 dark:border-slate-800 dark:bg-slate-950/20 dark:divide-slate-800">
       {items.map((it) => (
-        <div key={it.key} className="rounded-xl border border-slate-200 bg-white/60 p-2 dark:border-slate-800 dark:bg-slate-900/30">
-          <div className="flex items-start justify-between gap-2">
+        <div key={it.key} className="px-3 py-2 hover:bg-slate-50/70 dark:hover:bg-slate-900/40">
+          <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="font-medium truncate">{it.title}</div>
               {it.meta ? <div className="text-xs text-slate-600 dark:text-slate-400 truncate">{it.meta}</div> : null}
@@ -251,11 +340,35 @@ function ActionList({
   )
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function KpiCard({
+  label,
+  value,
+  meta,
+  children,
+}: {
+  label: string
+  value: ReactNode
+  meta?: string
+  children?: ReactNode
+}) {
   return (
     <div className="sr-card p-3">
       <div className="text-[11px] uppercase tracking-wide text-slate-400">{label}</div>
       <div className="mt-1 text-lg font-semibold">{value}</div>
+      {meta ? <div className="mt-1 text-xs text-slate-600 dark:text-slate-400">{meta}</div> : null}
+      {children ? <div className="mt-2">{children}</div> : null}
+    </div>
+  )
+}
+
+function ProgressBar({ value, max }: { value: number; max: number }) {
+  const safeMax = Math.max(1, Number.isFinite(max) ? max : 1)
+  const safeVal = Math.max(0, Math.min(safeMax, Number.isFinite(value) ? value : 0))
+  const pct = (safeVal / safeMax) * 100
+
+  return (
+    <div className="h-2 rounded-full bg-slate-100 overflow-hidden dark:bg-slate-900/40">
+      <div className="h-full bg-sky-500/40" style={{ width: `${pct}%` }} />
     </div>
   )
 }

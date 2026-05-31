@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useData } from '../lib/DataProvider'
-import { formatINR, monthKeyFromDate, todayISODate } from '../lib/utils'
+import { formatINR, formatLocalDate, monthKeyFromDate, todayISODate } from '../lib/utils'
 import type { Payment, PaymentMode } from '../lib/types'
 import { useToast } from '../components/ToastProvider'
 import { useI18n } from '../i18n/I18nProvider'
@@ -9,7 +9,7 @@ import { useI18n } from '../i18n/I18nProvider'
 export function PaymentsPage() {
   const { students, payments, addPayment } = useData()
   const toast = useToast()
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const [searchParams] = useSearchParams()
   const [month, setMonth] = useState(monthKeyFromDate(new Date()))
   const [error, setError] = useState<string | null>(null)
@@ -104,6 +104,20 @@ export function PaymentsPage() {
         <div className="sr-subtitle">{t('paymentsSubtitle')}</div>
       </div>
 
+      {active.length === 0 ? (
+        <div className="mt-4 sr-card p-3">
+          <div className="font-medium text-sm">{t('noStudents')}</div>
+          <div className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+            Add an active student first to record payments.
+          </div>
+          <div className="mt-3">
+            <Link className="sr-btn-primary" to="/students">
+              {t('addStudent')}
+            </Link>
+          </div>
+        </div>
+      ) : null}
+
       <div className="mt-4 grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-4">
         <div className="sr-card p-3">
           <div className="flex flex-wrap items-end gap-3">
@@ -170,7 +184,9 @@ export function PaymentsPage() {
                     .sort((a, b) => String(b.payment_date).localeCompare(String(a.payment_date)))
                     .map((p) => (
                       <tr key={p.id} className="border-t border-slate-800">
-                        <td className="sr-td whitespace-nowrap">{p.payment_date}</td>
+                        <td className="sr-td whitespace-nowrap">
+                          {formatLocalDate(String(p.payment_date), locale === 'mr' ? 'mr-IN' : 'en-IN')}
+                        </td>
                         <td className="sr-td">{p.student_name}</td>
                         <td className="sr-td">{p.seat_number ?? '-'}</td>
                         <td className="sr-td font-medium">{formatINR(Number(p.amount_paid || 0))}</td>

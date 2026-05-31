@@ -139,7 +139,9 @@ function SeatCard({
       onClick={onClick}
     >
       <div className="flex items-center justify-between gap-2">
-        <div className="font-semibold">{t('seatLabel', { n: seat })}</div>
+        <div className="text-xs font-medium text-slate-600 dark:text-slate-400">
+          {t('seatLabel', { n: seat })}
+        </div>
         <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs ${badge}`}>
           {state.kind === 'available' ? t('available') : state.kind === 'pending' ? t('pending') : t('occupied')}
         </span>
@@ -149,7 +151,7 @@ function SeatCard({
         {state.kind === 'available' ? (
           <span className="text-slate-500 dark:text-slate-400">{t('available')}</span>
         ) : (
-          <span className="text-slate-900 dark:text-slate-100 font-medium break-words leading-snug">{state.name}</span>
+          <span className="text-slate-900 dark:text-slate-100 font-semibold break-words leading-snug">{state.name}</span>
         )}
       </div>
 

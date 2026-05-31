@@ -146,6 +146,8 @@ export function StudentProfileModal({
     >
       {student ? (
         <div ref={bodyRef} className="space-y-3">
+          {/** Friendly ID display */}
+          
           {mode === 'edit' ? (
             <div className="rounded-xl border border-sky-400/30 bg-sky-500/10 p-3 text-sm text-slate-900 dark:text-slate-100">
               {t('editing')} <span className="font-semibold">{student.full_name}</span>
@@ -274,7 +276,7 @@ export function StudentProfileModal({
 
               <div>
                 <label className="block text-xs text-slate-400 mb-1">{t('address')}</label>
-                <input className="sr-input" name="address" defaultValue={student.address ?? ''} />
+                <textarea className="sr-textarea" name="address" rows={3} defaultValue={student.address ?? ''} />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -357,12 +359,44 @@ export function StudentProfileModal({
             </form>
           ) : (
             <>
+              {(() => {
+                const shortId = `S-${String(student.id).slice(0, 8)}`
+                const displayId = (student.student_code ?? '').trim() || shortId
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <Info
+                      label={t('studentId')}
+                      value={
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="min-w-0 font-semibold truncate" title={student.id}>
+                            {displayId}
+                          </div>
+                          <button
+                            className="sr-btn-sm shrink-0"
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                await navigator.clipboard.writeText(String(student.id))
+                                toast.success('Copied')
+                              } catch {
+                                toast.error('Copy failed')
+                              }
+                            }}
+                          >
+                            Copy
+                          </button>
+                        </div>
+                      }
+                    />
+                    <Info label={t('mobile')} value={student.mobile ?? '-'} />
+                    <Info label={t('parent')} value={student.parent_contact ?? '-'} />
+                  </div>
+                )
+              })()}
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <Info label={t('studentId')} value={student.student_code ?? student.id} />
-                <Info label={t('mobile')} value={student.mobile ?? '-'} />
-                <Info label={t('parent')} value={student.parent_contact ?? '-'} />
                 <Info label={t('seat')} value={student.seat_number ? String(student.seat_number) : '-'} />
-                <Info label={t('joiningDate')} value={student.joining_date ?? '-'} />
+                <Info label={t('joiningDate')} value={formatLocalDate(student.joining_date, intlLocale)} />
                 <Info
                   label={t('status')}
                   value={
@@ -373,15 +407,16 @@ export function StudentProfileModal({
                 />
               </div>
 
-              <div className="rounded-xl border border-slate-200 bg-white/60 p-3 dark:border-slate-800 dark:bg-slate-900/30">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="font-medium text-sm">{t('admissionForm')}</div>
+              <Accordion
+                title={t('admissionForm')}
+                defaultOpen
+                right={
                   <Tag kind={student.admission_submitted_at ? 'good' : 'warn'}>
                     {student.admission_submitted_at ? t('admissionSubmitted') : t('admissionNotSubmitted')}
                   </Tag>
-                </div>
-
-                <div className="mt-2 text-xs text-slate-600 dark:text-slate-400">
+                }
+              >
+                <div className="text-xs text-slate-600 dark:text-slate-400">
                   {t('admissionLinkExpires')}{' '}
                   <span className="text-slate-900 dark:text-slate-200">
                     {student.admission_token_expires_at
@@ -390,10 +425,10 @@ export function StudentProfileModal({
                   </span>
                 </div>
 
-                <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
+                <div className="mt-3 flex items-center gap-2 overflow-x-auto pb-1">
                   {activation && (!activation.hasSeat || !activation.paidThisMonth) ? (
                     <button
-                      className="sr-btn"
+                      className="sr-btn-sm shrink-0"
                       type="button"
                       onClick={() => {
                         setMode('edit')
@@ -405,7 +440,7 @@ export function StudentProfileModal({
                   ) : null}
 
                   <button
-                    className="sr-btn"
+                    className="sr-btn-sm shrink-0"
                     type="button"
                     onClick={async () => {
                       try {
@@ -423,7 +458,7 @@ export function StudentProfileModal({
                   </button>
 
                   <button
-                    className="sr-btn"
+                    className="sr-btn-sm shrink-0"
                     type="button"
                     onClick={async () => {
                       try {
@@ -442,12 +477,11 @@ export function StudentProfileModal({
                   </button>
 
                   <button
-                    className="sr-btn"
+                    className="sr-btn-sm shrink-0"
                     type="button"
                     onClick={async () => {
                       try {
                         const token = getValidAdmissionToken(student) ?? (await ensureAdmissionLink(student.id))
-
                         const base = new URL(import.meta.env.BASE_URL || '/', window.location.origin)
                         const url = new URL(`admission/${token}`, base).toString()
                         await navigator.clipboard.writeText(url)
@@ -462,7 +496,7 @@ export function StudentProfileModal({
                   </button>
 
                   <button
-                    className="sr-btn"
+                    className="sr-btn-primary-sm shrink-0"
                     type="button"
                     onClick={async () => {
                       try {
@@ -486,15 +520,15 @@ export function StudentProfileModal({
                     {t('sendWhatsApp')}
                   </button>
 
-                  <Link className="sr-btn" to={`/admission/print/${student.id}`} onClick={onClose}>
+                  <Link className="sr-btn-sm shrink-0" to={`/admission/print/${student.id}`} onClick={onClose}>
                     {t('printAdmissionForm')}
                   </Link>
                 </div>
 
                 {activation ? (
-                  <div className="mt-3 rounded-xl border border-slate-200 bg-white/60 p-3 text-sm dark:border-slate-800 dark:bg-slate-900/30">
+                  <div className="mt-3 sr-card-soft p-3">
                     <div className="flex items-center justify-between gap-2">
-                      <div className="font-medium">{t('activationChecklist')}</div>
+                      <div className="font-medium text-sm">{t('activationChecklist')}</div>
                       {activation.hasSeat && activation.hasFee && activation.paidThisMonth ? (
                         <Tag kind="good">{t('activationComplete')}</Tag>
                       ) : (
@@ -502,47 +536,9 @@ export function StudentProfileModal({
                       )}
                     </div>
 
-                    <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
-                      <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white/70 px-2 py-2 dark:border-slate-800 dark:bg-slate-900/40">
-                        <div>
-                          <div className="font-medium">{t('checkSeatAssigned')}</div>
-                          <div className="text-xs text-slate-600 dark:text-slate-400">{activation.hasSeat ? t('done') : t('pending')}</div>
-                        </div>
-                        {!activation.hasSeat ? (
-                          <button
-                            type="button"
-                            className="sr-btn-sm"
-                            onClick={() => {
-                              setMode('edit')
-                              setFocusField('seat')
-                            }}
-                          >
-                            {t('assignSeat')}
-                          </button>
-                        ) : null}
-                      </div>
-
-                      <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white/70 px-2 py-2 dark:border-slate-800 dark:bg-slate-900/40">
-                        <div>
-                          <div className="font-medium">{t('checkPaymentThisMonth', { month: monthKey })}</div>
-                          <div className="text-xs text-slate-600 dark:text-slate-400">{activation.paidThisMonth ? t('done') : t('pending')}</div>
-                        </div>
-                        {!activation.paidThisMonth ? (
-                          <Link className="sr-btn-sm" to={`/payments?student=${student.id}`} onClick={onClose}>
-                            {t('recordPayment')}
-                          </Link>
-                        ) : null}
-                      </div>
-
-                      <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white/70 px-2 py-2 dark:border-slate-800 dark:bg-slate-900/40">
-                        <div>
-                          <div className="font-medium">{t('checkPrintForm')}</div>
-                          <div className="text-xs text-slate-600 dark:text-slate-400">{t('optional')}</div>
-                        </div>
-                        <Link className="sr-btn-sm" to={`/admission/print/${student.id}`} onClick={onClose}>
-                          {t('print')}
-                        </Link>
-                      </div>
+                    <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                      <Info label={t('checkSeatAssigned')} value={activation.hasSeat ? t('done') : t('pending')} />
+                      <Info label={t('checkPaymentThisMonth', { month: monthKey })} value={activation.paidThisMonth ? t('done') : t('pending')} />
                     </div>
                   </div>
                 ) : null}
@@ -559,14 +555,14 @@ export function StudentProfileModal({
                 </div>
 
                 <div className="mt-3">
-                  <div className="text-xs text-slate-600 dark:text-slate-400">{t('address')}</div>
-                  <div className="mt-1 rounded-xl border border-slate-800 bg-slate-950/30 p-3 text-sm text-slate-200 whitespace-pre-line">
-                    {student.address ?? '-'}
-                  </div>
+                  <Info
+                    label={t('address')}
+                    value={<div className="whitespace-pre-line break-words">{student.address ?? '-'}</div>}
+                  />
                 </div>
-              </div>
+              </Accordion>
 
-              <div className="rounded-xl border border-slate-800 bg-slate-900/20 p-3">
+              <div className="sr-card p-3">
                 <div className="flex items-center justify-between gap-2">
                   <div className="font-medium text-sm">{t('currentMonth', { month: monthKey })}</div>
                   {current ? <Tag kind={current.status.kind}>{current.status.label}</Tag> : null}
@@ -608,39 +604,36 @@ export function StudentProfileModal({
                 </div>
               </div>
 
-              <div>
-                <div className="font-medium text-sm">{t('paymentHistory')}</div>
+              <Accordion title={t('paymentHistory')} defaultOpen={false}>
                 {history.length === 0 ? (
-                  <div className="mt-2 rounded-xl border border-slate-800 bg-slate-950/30 p-3 text-sm text-slate-400">
-                    {t('noPaymentsYet')}
-                  </div>
+                  <div className="text-sm text-slate-500 dark:text-slate-400">{t('noPaymentsYet')}</div>
                 ) : (
-                  <div className="mt-2 overflow-auto rounded-xl border border-slate-800">
-                    <table className="w-full text-sm">
-                      <thead className="bg-slate-900/40 text-slate-300">
+                  <div className="sr-table-wrap">
+                    <table className="sr-table">
+                      <thead className="sr-thead">
                         <tr>
-                          <th className="text-left font-medium px-3 py-2">{t('date')}</th>
-                          <th className="text-left font-medium px-3 py-2">{t('monthColumn')}</th>
-                          <th className="text-left font-medium px-3 py-2">{t('amount')}</th>
-                          <th className="text-left font-medium px-3 py-2">{t('mode')}</th>
-                          <th className="text-left font-medium px-3 py-2">{t('txn')}</th>
+                          <th className="sr-th whitespace-nowrap">{t('date')}</th>
+                          <th className="sr-th whitespace-nowrap">{t('monthColumn')}</th>
+                          <th className="sr-th">{t('amount')}</th>
+                          <th className="sr-th">{t('mode')}</th>
+                          <th className="sr-th">{t('txn')}</th>
                         </tr>
                       </thead>
                       <tbody>
                         {history.map((p) => (
                           <tr key={p.id} className="border-t border-slate-800">
-                            <td className="px-3 py-2">{p.payment_date}</td>
-                            <td className="px-3 py-2">{p.month}</td>
-                            <td className="px-3 py-2 font-medium">{formatINR(Number(p.amount_paid || 0))}</td>
-                            <td className="px-3 py-2">{p.payment_mode}</td>
-                            <td className="px-3 py-2">{p.transaction_id ?? '-'}</td>
+                            <td className="sr-td whitespace-nowrap">{formatLocalDate(p.payment_date, intlLocale)}</td>
+                            <td className="sr-td whitespace-nowrap">{p.month}</td>
+                            <td className="sr-td whitespace-nowrap font-medium">{formatINR(Number(p.amount_paid || 0))}</td>
+                            <td className="sr-td whitespace-nowrap">{p.payment_mode}</td>
+                            <td className="sr-td whitespace-nowrap">{p.transaction_id ?? '-'}</td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
                 )}
-              </div>
+              </Accordion>
             </>
           )}
         </div>
@@ -675,5 +668,41 @@ function Info({ label, value }: { label: string; value: React.ReactNode }) {
       <div className="text-[11px] uppercase tracking-wide text-slate-600 dark:text-slate-400">{label}</div>
       <div className="mt-1 text-sm">{value}</div>
     </div>
+  )
+}
+
+function Accordion({
+  title,
+  right,
+  defaultOpen,
+  children,
+}: {
+  title: string
+  right?: React.ReactNode
+  defaultOpen?: boolean
+  children: React.ReactNode
+}) {
+  const [open, setOpen] = useState(Boolean(defaultOpen))
+
+  return (
+    <details
+      className="sr-card p-3 group"
+      open={open}
+      onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)}
+    >
+      <summary className="flex items-center justify-between gap-3 cursor-pointer select-none [&::-webkit-details-marker]:hidden">
+        <div className="font-medium text-sm">{title}</div>
+        <div className="shrink-0 inline-flex items-center gap-2">
+          {right ? <div>{right}</div> : null}
+          <span
+            className="inline-block text-slate-500 dark:text-slate-400 transition-transform group-open:rotate-90"
+            aria-hidden="true"
+          >
+            ▸
+          </span>
+        </div>
+      </summary>
+      <div className="mt-3">{children}</div>
+    </details>
   )
 }

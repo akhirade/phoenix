@@ -92,8 +92,9 @@ function SettingsEditor({
       })
       toast.success(t('settingsSaved'))
       setMsg(t('saved'))
-    } catch (e: any) {
-      setMsg(e?.message || t('saveFailed'))
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : t('saveFailed')
+      setMsg(msg)
     } finally {
       setBusy(false)
     }
