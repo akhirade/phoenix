@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useData } from '../lib/DataProvider'
 import { dueDayFromISODate, formatINR, formatLocalDate, formatLocalDateTime, monthKeyFromDate, seatNumbers, todayISODate } from '../lib/utils'
-import type { Student } from '../lib/types'
+import type { Payment, Student } from '../lib/types'
 import { Modal } from './Modal'
 import { Tag } from './Tag'
 import { useToast } from './ToastProvider'
@@ -23,7 +23,7 @@ export function StudentProfileModal({
   prefillStatus?: 'Active' | 'Inactive'
   onClose: () => void
 }) {
-  const { students, payments, settings, upsertStudent, ensureAdmissionLink, refreshStudent } = useData()
+  const { students, settings, upsertStudent, ensureAdmissionLink, refreshStudent, listPaymentsByStudent } = useData()
   const toast = useToast()
   const { t, locale } = useI18n()
 
@@ -33,6 +33,7 @@ export function StudentProfileModal({
   const [focusField, setFocusField] = useState<'seat' | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [studentPayments, setStudentPayments] = useState<Payment[]>([])
   const bodyRef = useRef<HTMLDivElement | null>(null)
 
   const student = useMemo(
@@ -52,18 +53,34 @@ export function StudentProfileModal({
 
   const monthKey = monthKeyFromDate(new Date())
 
+  useEffect(() => {
+    let cancelled = false
+    if (!open || !studentId) return
+
+    listPaymentsByStudent(studentId)
+      .then((rows) => {
+        if (cancelled) return
+        setStudentPayments(rows)
+      })
+      .catch(() => {
+        if (cancelled) return
+        setStudentPayments([])
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [open, studentId, listPaymentsByStudent])
+
   const history = useMemo(() => {
     if (!studentId) return []
-    return payments
-      .filter((p) => p.student_id === studentId)
-      .slice()
-      .sort((a, b) => String(b.payment_date).localeCompare(String(a.payment_date)))
-  }, [payments, studentId])
+    return studentPayments
+  }, [studentId, studentPayments])
 
   const current = useMemo(() => {
     if (!studentId) return null
-    const paid = payments
-      .filter((p) => p.student_id === studentId && p.month === monthKey)
+    const paid = studentPayments
+      .filter((p) => p.month === monthKey)
       .reduce((sum, p) => sum + Number(p.amount_paid || 0), 0)
 
     const fee = Number(student?.monthly_fee ?? settings.defaultMonthlyFee)
@@ -78,7 +95,7 @@ export function StudentProfileModal({
           ? { kind: 'warn' as const, label: `${t('pending')} (${formatINR(due)})` }
           : { kind: 'good' as const, label: t('paidStatus') },
     }
-  }, [payments, studentId, monthKey, student?.monthly_fee, settings.defaultMonthlyFee, t])
+  }, [studentPayments, studentId, monthKey, student?.monthly_fee, settings.defaultMonthlyFee, t])
 
   const activation = useMemo(() => {
     if (!student) return null
@@ -87,7 +104,7 @@ export function StudentProfileModal({
     const hasSeat = student.status === 'Active' && Number(student.seat_number)
     const fee = Number(student.monthly_fee ?? settings.defaultMonthlyFee)
     const hasFee = fee > 0
-    const paidThisMonth = (current?.due ?? 0) <= 0
+    const paidThisMonth = hasFee && (current?.due ?? Number.POSITIVE_INFINITY) <= 0
 
     return {
       hasSeat,

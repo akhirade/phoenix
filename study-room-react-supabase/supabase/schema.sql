@@ -91,6 +91,12 @@ create table if not exists public.payments (
 create index if not exists payments_student_id_idx on public.payments(student_id);
 create index if not exists payments_month_idx on public.payments(month);
 
+create index if not exists payments_month_payment_date_idx
+on public.payments (month, payment_date desc);
+
+create index if not exists payments_student_payment_date_idx
+on public.payments (student_id, payment_date desc);
+
 -- updated_at trigger for students and app_settings
 create or replace function public.set_updated_at()
 returns trigger language plpgsql as $$

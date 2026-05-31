@@ -10,7 +10,7 @@ body {
 }
 
 @page {
-  margin: 12mm;
+  margin: 8mm;
 }
 
 @media print {
@@ -24,6 +24,11 @@ body {
     color: #000 !important;
   }
 
+  html,
+  body {
+    overflow-x: hidden;
+  }
+
   header,
   aside,
   footer {
@@ -33,10 +38,6 @@ body {
   main {
     border: 0 !important;
     background: transparent !important;
-  html,
-  body {
-    overflow-x: hidden;
-  }
     padding: 0 !important;
   }
 
@@ -61,7 +62,7 @@ body {
   }
 
   .sr-print .sr-print-block {
-    padding: 8px !important;
+    padding: 6px !important;
   }
 
   .sr-print .sr-print-avoid-break {
@@ -78,5 +79,18 @@ body {
   }
   .sr-print .gap-3 {
     gap: 0.5rem !important;
+  }
+
+  /* Make the admission form fields more compact to fit on one page */
+  .sr-print .sr-print-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  /* Terms are long; two-column layout saves paper while staying readable */
+  .sr-print .sr-print-terms {
+    font-size: 10px !important;
+    line-height: 1.2 !important;
+    column-count: 2;
+    column-gap: 12px;
   }
 }

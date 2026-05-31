@@ -1,13 +1,33 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useData } from '../lib/DataProvider'
 import { formatINR, formatLocalDateTime, monthKeyFromDate } from '../lib/utils'
 import { useI18n } from '../i18n/I18nProvider'
+import type { Payment } from '../lib/types'
 
 export function DashboardPage() {
-  const { loading, students, payments, settings } = useData()
+  const { loading, students, settings, listPaymentsByMonth } = useData()
   const { t, locale } = useI18n()
   const monthKey = monthKeyFromDate(new Date())
+
+  const [monthPayments, setMonthPayments] = useState<Payment[]>([])
+
+  useEffect(() => {
+    let cancelled = false
+    listPaymentsByMonth(monthKey)
+      .then((rows) => {
+        if (cancelled) return
+        setMonthPayments(rows)
+      })
+      .catch(() => {
+        if (cancelled) return
+        setMonthPayments([])
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [monthKey, listPaymentsByMonth])
 
   const seatsTotal = Number(settings.totalSeats || 45)
   const todayDay = new Date().getDate()
@@ -17,7 +37,6 @@ export function DashboardPage() {
     const active = students.filter((s) => s.status === 'Active')
     const occupied = active.filter((s) => Number(s.seat_number)).length
     const available = seatsTotal - occupied
-    const monthPayments = payments.filter((p) => p.month === monthKey)
     const collected = monthPayments.reduce((sum, p) => sum + Number(p.amount_paid || 0), 0)
 
     // Pending = active students with seat but not fully paid for this month
@@ -33,14 +52,13 @@ export function DashboardPage() {
     const pendingCount = Array.from(dueMap.values()).filter((d) => d > 0).length
 
     return { activeCount: active.length, occupied, available, collected, pendingCount }
-  }, [students, payments, monthKey, seatsTotal])
+  }, [students, monthPayments, seatsTotal])
 
   const actions = useMemo(() => {
     const now = new Date().getTime()
     const weekAgo = now - 7 * 24 * 60 * 60 * 1000
     const soonMs = 48 * 60 * 60 * 1000
 
-    const monthPayments = payments.filter((p) => p.month === monthKey)
     const paidByStudent = new Map<string, number>()
     for (const p of monthPayments) {
       if (!p.student_id) continue
@@ -94,7 +112,7 @@ export function DashboardPage() {
       expiringLinks,
       recentAdmissions,
     }
-  }, [students, payments, settings, monthKey, dueCutoffDay])
+  }, [students, monthPayments, settings, dueCutoffDay])
 
   return (
     <div>

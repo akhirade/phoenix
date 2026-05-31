@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useData } from '../lib/DataProvider'
 import { monthKeyFromDate, seatNumbers } from '../lib/utils'
 import { StudentProfileModal } from '../components/StudentProfileModal'
 import { AddStudentSeatModal } from '../components/AddStudentSeatModal'
 import { useI18n } from '../i18n/I18nProvider'
+import type { Payment } from '../lib/types'
 
 type SeatState =
   | { kind: 'available' }
@@ -12,20 +13,36 @@ type SeatState =
   | { kind: 'pending'; studentId: string; name: string; due: number }
 
 export function SeatsPage() {
-  const { students, payments, settings } = useData()
+  const { students, settings, listPaymentsByMonth } = useData()
   const { t } = useI18n()
   const monthKey = monthKeyFromDate(new Date())
   const seatsTotal = Number(settings.totalSeats || 45)
+  const [monthPayments, setMonthPayments] = useState<Payment[]>([])
   const [profileId, setProfileId] = useState<string | null>(null)
   const [profileOpen, setProfileOpen] = useState(false)
   const [addSeat, setAddSeat] = useState<number | null>(null)
   const [addOpen, setAddOpen] = useState(false)
 
+  useEffect(() => {
+    let cancelled = false
+    listPaymentsByMonth(monthKey)
+      .then((rows) => {
+        if (cancelled) return
+        setMonthPayments(rows)
+      })
+      .catch(() => {
+        if (cancelled) return
+        setMonthPayments([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [monthKey, listPaymentsByMonth])
+
   const seatMap = useMemo(() => {
     const active = students.filter((s) => s.status === 'Active' && s.seat_number)
     const paidByStudent = new Map<string, number>()
-    for (const p of payments) {
-      if (p.month !== monthKey) continue
+    for (const p of monthPayments) {
       if (!p.student_id) continue
       paidByStudent.set(p.student_id, (paidByStudent.get(p.student_id) || 0) + Number(p.amount_paid || 0))
     }
@@ -41,7 +58,7 @@ export function SeatsPage() {
       }
     }
     return map
-  }, [students, payments, monthKey])
+  }, [students, monthPayments])
 
   function onSeatClick(seat: number, state: SeatState) {
     if (state.kind === 'available') {

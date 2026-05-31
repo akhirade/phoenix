@@ -301,14 +301,17 @@ export function StudentsPage() {
             </div>
 
             {/* Table view for larger screens */}
-            <div className="hidden sm:block sr-table-wrap">
+            <div
+              className="hidden sm:block sr-table-wrap max-h-[520px] overflow-y-auto overflow-x-hidden"
+              style={{ scrollbarGutter: 'stable', overflowX: 'hidden', overflowY: 'auto' }}
+            >
               <table className="sr-table">
                 <thead className="sr-thead">
                   <tr>
-                    <th className="sr-th">{t('tableStudent')}</th>
-                    <th className="sr-th">{t('tableSeat')}</th>
-                    <th className="sr-th">{t('tableStatus')}</th>
-                    <th className="px-3 py-2"></th>
+                    <th className="sr-th bg-slate-100 dark:bg-slate-900">{t('tableStudent')}</th>
+                    <th className="sr-th w-[80px] bg-slate-100 dark:bg-slate-900">{t('tableSeat')}</th>
+                    <th className="sr-th w-[110px] bg-slate-100 dark:bg-slate-900">{t('tableStatus')}</th>
+                    <th className="px-3 py-2 w-[220px] bg-slate-100 dark:bg-slate-900"></th>
                   </tr>
                 </thead>
                 <tbody>

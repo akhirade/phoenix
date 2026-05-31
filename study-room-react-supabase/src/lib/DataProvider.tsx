@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import React, { createContext, useContext, useEffect, useState } from 'react'
 import { useAuth } from '../auth/AuthProvider'
 import { supabase } from './supabase'
 import type { AppSettings, Payment, Student } from './types'
@@ -8,7 +8,6 @@ type DataContextValue = {
   loading: boolean
   settings: AppSettings
   students: Student[]
-  payments: Payment[]
   refreshAll: () => Promise<void>
 
   refreshStudent: (studentId: string) => Promise<void>
@@ -18,7 +17,10 @@ type DataContextValue = {
 
   ensureAdmissionLink: (studentId: string) => Promise<string>
 
-  addPayment: (payment: Omit<Payment, 'id' | 'created_at'>) => Promise<void>
+  addPayment: (payment: Omit<Payment, 'id' | 'created_at'>) => Promise<Payment>
+
+  listPaymentsByMonth: (month: string) => Promise<Payment[]>
+  listPaymentsByStudent: (studentId: string) => Promise<Payment[]>
 
   saveSettings: (next: AppSettings) => Promise<void>
 }
@@ -51,25 +53,20 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS)
   const [students, setStudents] = useState<Student[]>([])
-  const [payments, setPayments] = useState<Payment[]>([])
 
   async function refreshAllInternal(opts?: { silent?: boolean }) {
     const silent = !!opts?.silent
     if (!silent) setLoading(true)
     try {
-      const [{ data: settingsRow }, { data: st, error: stErr }, { data: pay, error: payErr }] =
-        await Promise.all([
-          supabase.from('app_settings').select('*').eq('id', 'default').maybeSingle(),
-          supabase.from('students').select('*'),
-          supabase.from('payments').select('*'),
-        ])
+      const [{ data: settingsRow }, { data: st, error: stErr }] = await Promise.all([
+        supabase.from('app_settings').select('*').eq('id', 'default').maybeSingle(),
+        supabase.from('students').select('*'),
+      ])
 
       if (stErr) throw stErr
-      if (payErr) throw payErr
 
       setSettings((settingsRow as any)?.value ?? DEFAULT_SETTINGS)
       setStudents((st as any) ?? [])
-      setPayments((pay as any) ?? [])
     } finally {
       if (!silent) setLoading(false)
     }
@@ -91,7 +88,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     if(!session){
       setStudents([])
-      setPayments([])
       setSettings(DEFAULT_SETTINGS)
       setLoading(false)
       return
@@ -174,28 +170,68 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     return token
   }
 
-  async function addPayment(payment: Omit<Payment, 'id' | 'created_at'>) {
+  async function addPayment(payment: Omit<Payment, 'id' | 'created_at'>): Promise<Payment> {
     const { data, error } = await supabase.from('payments').insert(payment as any).select('*').single()
     if (error) throw error
-    setPayments((prev) => [...prev, data as any])
+    return data as any as Payment
   }
 
-  const value = useMemo<DataContextValue>(
-    () => ({
-      loading,
-      settings,
-      students,
-      payments,
-      refreshAll,
-      refreshStudent,
-      upsertStudent,
-      setStudentStatus,
-      ensureAdmissionLink,
-      addPayment,
-      saveSettings,
-    }),
-    [loading, settings, students, payments],
-  )
+  async function listPaymentsByMonth(month: string): Promise<Payment[]> {
+    if (!session) return []
+    const pageSize = 1000
+    const out: Payment[] = []
+    for (let from = 0; ; from += pageSize) {
+      const to = from + pageSize - 1
+      const { data, error } = await supabase
+        .from('payments')
+        .select('*')
+        .eq('month', month)
+        .order('payment_date', { ascending: false })
+        .range(from, to)
+
+      if (error) throw error
+      const rows = (data as any as Payment[]) ?? []
+      out.push(...rows)
+      if (rows.length < pageSize) break
+    }
+    return out
+  }
+
+  async function listPaymentsByStudent(studentId: string): Promise<Payment[]> {
+    if (!session) return []
+    const pageSize = 1000
+    const out: Payment[] = []
+    for (let from = 0; ; from += pageSize) {
+      const to = from + pageSize - 1
+      const { data, error } = await supabase
+        .from('payments')
+        .select('*')
+        .eq('student_id', studentId)
+        .order('payment_date', { ascending: false })
+        .range(from, to)
+
+      if (error) throw error
+      const rows = (data as any as Payment[]) ?? []
+      out.push(...rows)
+      if (rows.length < pageSize) break
+    }
+    return out
+  }
+
+  const value: DataContextValue = {
+    loading,
+    settings,
+    students,
+    refreshAll,
+    refreshStudent,
+    upsertStudent,
+    setStudentStatus,
+    ensureAdmissionLink,
+    addPayment,
+    listPaymentsByMonth,
+    listPaymentsByStudent,
+    saveSettings,
+  }
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>
 }

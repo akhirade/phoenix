@@ -1,20 +1,64 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useData } from '../lib/DataProvider'
 import { formatINR, formatLocalDate, monthKeyFromDate } from '../lib/utils'
 import { useI18n } from '../i18n/I18nProvider'
+import type { Payment } from '../lib/types'
 
 export function ReportsPage() {
-  const { students, payments, settings } = useData()
+  const { students, settings, listPaymentsByMonth, listPaymentsByStudent } = useData()
   const { t, locale } = useI18n()
   const [month, setMonth] = useState(monthKeyFromDate(new Date()))
   const [ledgerStudentId, setLedgerStudentId] = useState('')
+
+  const [monthPayments, setMonthPayments] = useState<Payment[]>([])
+  const [ledgerPayments, setLedgerPayments] = useState<Payment[]>([])
 
   const seatsTotal = Number(settings.totalSeats || 45)
 
   const active = useMemo(() => students.filter((s) => s.status === 'Active'), [students])
 
-  const monthPayments = useMemo(() => payments.filter((p) => p.month === month), [payments, month])
+  useEffect(() => {
+    let cancelled = false
+    listPaymentsByMonth(month)
+      .then((rows) => {
+        if (cancelled) return
+        setMonthPayments(rows)
+      })
+      .catch(() => {
+        if (cancelled) return
+        setMonthPayments([])
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [month, listPaymentsByMonth])
+
+  useEffect(() => {
+    let cancelled = false
+    if (!ledgerStudentId) {
+      return
+    }
+    listPaymentsByStudent(ledgerStudentId)
+      .then((rows) => {
+        if (cancelled) return
+        setLedgerPayments(rows)
+      })
+      .catch(() => {
+        if (cancelled) return
+        setLedgerPayments([])
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [ledgerStudentId, listPaymentsByStudent])
+
+  const visibleLedgerPayments = useMemo(
+    () => (ledgerStudentId ? ledgerPayments : []),
+    [ledgerStudentId, ledgerPayments],
+  )
 
   const paidByStudent = useMemo(() => {
     const map = new Map<string, number>()
@@ -100,17 +144,11 @@ export function ReportsPage() {
     [active],
   )
 
-  const ledgerPayments = useMemo(() => {
-    if (!ledgerStudentId) return []
-    return payments
-      .filter((p) => p.student_id === ledgerStudentId)
-      .slice()
-      .sort((a, b) => String(b.payment_date).localeCompare(String(a.payment_date)))
-  }, [payments, ledgerStudentId])
+  // `ledgerPayments` is loaded on-demand per selected student.
 
   const ledgerTotal = useMemo(
-    () => ledgerPayments.reduce((sum, p) => sum + Number(p.amount_paid || 0), 0),
-    [ledgerPayments],
+    () => visibleLedgerPayments.reduce((sum, p) => sum + Number(p.amount_paid || 0), 0),
+    [visibleLedgerPayments],
   )
 
   function downloadCsv(filename: string, csv: string) {
@@ -242,6 +280,7 @@ export function ReportsPage() {
         </div>
       </div>
 
+
       <div className="mt-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <Stat label={t('statExpected')} value={formatINR(expectedFee)} />
         <Stat label={t('statCollected')} value={formatINR(totalCollected)} />
@@ -340,7 +379,7 @@ export function ReportsPage() {
                 </tr>
               </thead>
               <tbody>
-                {ledgerPayments.map((p) => (
+                {visibleLedgerPayments.map((p) => (
                   <tr key={p.id} className="border-t border-slate-200 dark:border-slate-800">
                     <td className="sr-td whitespace-nowrap">
                       {formatLocalDate(String(p.payment_date), locale === 'mr' ? 'mr-IN' : 'en-IN')}
@@ -351,7 +390,7 @@ export function ReportsPage() {
                     <td className="sr-td whitespace-nowrap">{p.transaction_id ?? '-'}</td>
                   </tr>
                 ))}
-                {ledgerPayments.length === 0 ? (
+                {visibleLedgerPayments.length === 0 ? (
                   <tr>
                     <td className="px-3 py-4 text-slate-400" colSpan={5}>
                       {t('noPaymentsYet')}

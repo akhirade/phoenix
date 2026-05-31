@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useData } from '../lib/DataProvider'
 import { formatINR, formatLocalDate, monthKeyFromDate, todayISODate } from '../lib/utils'
@@ -7,11 +7,12 @@ import { useToast } from '../components/ToastProvider'
 import { useI18n } from '../i18n/I18nProvider'
 
 export function PaymentsPage() {
-  const { students, payments, addPayment } = useData()
+  const { students, addPayment, listPaymentsByMonth } = useData()
   const toast = useToast()
   const { t, locale } = useI18n()
   const [searchParams] = useSearchParams()
   const [month, setMonth] = useState(monthKeyFromDate(new Date()))
+  const [monthPayments, setMonthPayments] = useState<Payment[]>([])
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -19,7 +20,22 @@ export function PaymentsPage() {
 
   const active = useMemo(() => students.filter((s) => s.status === 'Active'), [students])
 
-  const monthPayments = useMemo(() => payments.filter((p) => p.month === month), [payments, month])
+  useEffect(() => {
+    let cancelled = false
+    listPaymentsByMonth(month)
+      .then((rows) => {
+        if (cancelled) return
+        setMonthPayments(rows)
+      })
+      .catch(() => {
+        if (cancelled) return
+        setMonthPayments([])
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [month, listPaymentsByMonth])
 
   const unpaid = useMemo(() => {
     const paidBy = new Map<string, number>()
@@ -84,7 +100,8 @@ export function PaymentsPage() {
         status,
       }
 
-      await addPayment(payload)
+      const inserted = await addPayment(payload)
+      setMonthPayments((prev) => [inserted, ...prev])
 
       toast.success(t('paymentRecorded'))
 
@@ -166,16 +183,20 @@ export function PaymentsPage() {
 
           <div className="mt-4">
             <div className="font-medium text-sm">{t('paymentRecords')}</div>
-            <div className="mt-2 sr-table-wrap">
+            <div
+              className="mt-2 sr-table-wrap max-h-[420px] overflow-y-auto overflow-x-hidden"
+              data-testid="payment-records-wrap"
+              style={{ scrollbarGutter: 'stable' }}
+            >
               <table className="sr-table">
                 <thead className="sr-thead">
                   <tr>
-                    <th className="sr-th whitespace-nowrap">{t('date')}</th>
-                    <th className="sr-th">{t('tableStudent')}</th>
-                    <th className="sr-th">{t('tableSeat')}</th>
-                    <th className="sr-th">{t('amount')}</th>
-                    <th className="sr-th">{t('mode')}</th>
-                    <th className="sr-th">{t('txn')}</th>
+                    <th className="sr-th whitespace-nowrap w-[120px] bg-slate-100 dark:bg-slate-900">{t('date')}</th>
+                    <th className="sr-th bg-slate-100 dark:bg-slate-900">{t('tableStudent')}</th>
+                    <th className="sr-th w-[64px] bg-slate-100 dark:bg-slate-900">{t('tableSeat')}</th>
+                    <th className="sr-th w-[96px] bg-slate-100 dark:bg-slate-900">{t('amount')}</th>
+                    <th className="sr-th w-[78px] bg-slate-100 dark:bg-slate-900">{t('mode')}</th>
+                    <th className="sr-th w-[140px] bg-slate-100 dark:bg-slate-900">{t('txn')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -184,14 +205,14 @@ export function PaymentsPage() {
                     .sort((a, b) => String(b.payment_date).localeCompare(String(a.payment_date)))
                     .map((p) => (
                       <tr key={p.id} className="border-t border-slate-200 dark:border-slate-800">
-                        <td className="sr-td whitespace-nowrap">
+                        <td className="sr-td whitespace-nowrap w-[120px]">
                           {formatLocalDate(String(p.payment_date), locale === 'mr' ? 'mr-IN' : 'en-IN')}
                         </td>
-                        <td className="sr-td">{p.student_name}</td>
-                        <td className="sr-td">{p.seat_number ?? '-'}</td>
-                        <td className="sr-td font-medium">{formatINR(Number(p.amount_paid || 0))}</td>
-                        <td className="sr-td">{modeLabel(p.payment_mode)}</td>
-                        <td className="sr-td">{p.transaction_id ?? '-'}</td>
+                        <td className="sr-td break-words">{p.student_name}</td>
+                        <td className="sr-td w-[64px]">{p.seat_number ?? '-'}</td>
+                        <td className="sr-td font-medium w-[96px]">{formatINR(Number(p.amount_paid || 0))}</td>
+                        <td className="sr-td w-[78px]">{modeLabel(p.payment_mode)}</td>
+                        <td className="sr-td w-[140px] break-words">{p.transaction_id ?? '-'}</td>
                       </tr>
                     ))}
                   {monthPayments.length === 0 ? (

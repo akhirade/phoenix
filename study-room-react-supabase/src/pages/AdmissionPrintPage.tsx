@@ -75,7 +75,7 @@ export function AdmissionPrintPage() {
         <div className="text-center">
           <div className="text-lg font-semibold">{settings.centerName || t('appName')}</div>
           {settings.centerAddress ? (
-            <div className="mt-1 text-sm whitespace-pre-line text-slate-600 dark:text-slate-400">
+            <div className="mt-1 text-sm whitespace-pre-wrap break-words text-slate-600 dark:text-slate-400">
               {settings.centerAddress}
             </div>
           ) : null}
@@ -84,7 +84,7 @@ export function AdmissionPrintPage() {
           ) : null}
         </div>
 
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm sr-print-grid">
           <Field label={t('fullName')} value={student.full_name} />
           <Field label={t('mobile')} value={student.mobile ?? '-'} />
           <Field label={t('email')} value={student.email ?? '-'} />
@@ -99,7 +99,7 @@ export function AdmissionPrintPage() {
 
         <div className="mt-3">
           <div className="text-xs text-slate-600 dark:text-slate-400">{t('address')}</div>
-          <div className="mt-1 rounded-xl border border-slate-200 bg-white/60 p-3 whitespace-pre-line text-sm dark:border-slate-800 dark:bg-slate-900/30 sr-print-block sr-print-avoid-break">
+          <div className="mt-1 rounded-xl border border-slate-200 bg-white/60 p-3 whitespace-pre-wrap break-words text-sm dark:border-slate-800 dark:bg-slate-900/30 sr-print-block sr-print-avoid-break">
             {student.address ?? '-'}
           </div>
         </div>
@@ -107,7 +107,7 @@ export function AdmissionPrintPage() {
         {terms ? (
           <div className="mt-4">
             <div className="font-medium text-sm">{t('termsAndConditions')}</div>
-            <div className="mt-2 rounded-xl border border-slate-200 bg-white/60 p-3 whitespace-pre-line text-sm dark:border-slate-800 dark:bg-slate-900/30 sr-print-block">
+            <div className="mt-2 rounded-xl border border-slate-200 bg-white/60 p-3 whitespace-pre-wrap break-words text-sm dark:border-slate-800 dark:bg-slate-900/30 sr-print-block sr-print-terms">
               {terms}
             </div>
           </div>
