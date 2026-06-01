@@ -36,6 +36,8 @@ const MESSAGES = {
     inactive: 'Inactive',
     markInactive: 'Mark Inactive',
     markActive: 'Mark Active',
+    studentMarkedInactive: 'Student marked inactive.',
+    studentMarkedActive: 'Student marked active.',
 
     monthInput: 'Month (YYYY-MM)',
     monthColumn: 'Month',
@@ -307,6 +309,8 @@ const MESSAGES = {
     inactive: 'निष्क्रिय',
     markInactive: 'निष्क्रिय करा',
     markActive: 'सक्रिय करा',
+    studentMarkedInactive: 'विद्यार्थी निष्क्रिय केला.',
+    studentMarkedActive: 'विद्यार्थी सक्रिय केला.',
 
     monthInput: 'महिना (YYYY-MM)',
     monthColumn: 'महिना',

@@ -12,7 +12,7 @@ export function PaymentsPage() {
   const { t, locale } = useI18n()
   const [searchParams] = useSearchParams()
   const [month, setMonth] = useState(monthKeyFromDate(new Date()))
-  const [monthPayments, setMonthPayments] = useState<Payment[]>([])
+  const [monthPayments, setMonthPayments] = useState<Payment[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -22,6 +22,7 @@ export function PaymentsPage() {
 
   useEffect(() => {
     let cancelled = false
+    setMonthPayments(null)
     listPaymentsByMonth(month)
       .then((rows) => {
         if (cancelled) return
@@ -38,6 +39,7 @@ export function PaymentsPage() {
   }, [month, listPaymentsByMonth])
 
   const unpaid = useMemo(() => {
+    if (!monthPayments) return []
     const paidBy = new Map<string, number>()
     for (const p of monthPayments) {
       if (!p.student_id) continue
@@ -81,8 +83,10 @@ export function PaymentsPage() {
       const paymentDate = String(fd.get('payment_date') || todayISODate())
 
       const paidSoFar = monthPayments
-        .filter((p) => p.student_id === st.id)
-        .reduce((sum, p) => sum + Number(p.amount_paid || 0), 0)
+        ? monthPayments
+            .filter((p) => p.student_id === st.id)
+            .reduce((sum, p) => sum + Number(p.amount_paid || 0), 0)
+        : 0
       const afterPaid = paidSoFar + amount
       const dueAfter = Math.max(0, Number(st.monthly_fee || 0) - afterPaid)
       const status = dueAfter <= 0 ? 'Paid' : afterPaid > 0 ? 'Partial Paid' : 'Pending'
@@ -101,7 +105,7 @@ export function PaymentsPage() {
       }
 
       const inserted = await addPayment(payload)
-      setMonthPayments((prev) => [inserted, ...prev])
+      setMonthPayments((prev) => (prev ? [inserted, ...prev] : [inserted]))
 
       toast.success(t('paymentRecorded'))
 
@@ -161,6 +165,13 @@ export function PaymentsPage() {
                   </tr>
                 </thead>
                 <tbody>
+                  {monthPayments === null ? (
+                    <tr>
+                      <td className="px-3 py-4 text-slate-400" colSpan={4}>
+                        {t('loading')}
+                      </td>
+                    </tr>
+                  ) : null}
                   {unpaid.map((x) => (
                     <tr key={x.s.id} className="border-t border-slate-200 dark:border-slate-800">
                       <td className="sr-td">{x.s.full_name}</td>
@@ -169,7 +180,7 @@ export function PaymentsPage() {
                       <td className="sr-td font-medium">{formatINR(x.due)}</td>
                     </tr>
                   ))}
-                  {unpaid.length === 0 ? (
+                  {monthPayments !== null && unpaid.length === 0 ? (
                     <tr>
                       <td className="px-3 py-4 text-slate-400" colSpan={4}>
                         {t('noPendingDues', { month })}
@@ -200,7 +211,14 @@ export function PaymentsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {monthPayments
+                  {monthPayments === null ? (
+                    <tr>
+                      <td className="px-3 py-4 text-slate-400" colSpan={6}>
+                        {t('loading')}
+                      </td>
+                    </tr>
+                  ) : null}
+                  {(monthPayments ?? [])
                     .slice()
                     .sort((a, b) => String(b.payment_date).localeCompare(String(a.payment_date)))
                     .map((p) => (
@@ -215,7 +233,7 @@ export function PaymentsPage() {
                         <td className="sr-td w-[140px] break-words">{p.transaction_id ?? '-'}</td>
                       </tr>
                     ))}
-                  {monthPayments.length === 0 ? (
+                  {monthPayments !== null && monthPayments.length === 0 ? (
                     <tr>
                       <td className="px-3 py-4 text-slate-400" colSpan={6}>
                         {t('noPaymentsForMonth', { month })}

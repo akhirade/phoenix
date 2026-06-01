@@ -18,11 +18,24 @@ export function Modal({
 
   useEffect(() => {
     if (!open) return
+
+    // Prevent background scroll + layout shift while the modal is open.
+    const prevBodyOverflow = document.body.style.overflow
+    const prevBodyPaddingRight = document.body.style.paddingRight
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
+
+    document.body.style.overflow = 'hidden'
+    if (scrollbarWidth > 0) document.body.style.paddingRight = `${scrollbarWidth}px`
+
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose()
     }
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.body.style.overflow = prevBodyOverflow
+      document.body.style.paddingRight = prevBodyPaddingRight
+    }
   }, [open, onClose])
 
   if (!open) return null

@@ -210,7 +210,7 @@ export function DashboardPage() {
                 key: s.id,
                 title: s.full_name,
                 meta: t('noSeat'),
-                primary: { label: t('assignSeat'), to: `/students?profile=${s.id}` },
+                primary: { label: t('assignSeat'), to: `/students?edit=${s.id}` },
               }))}
             />
           </ActionCard>

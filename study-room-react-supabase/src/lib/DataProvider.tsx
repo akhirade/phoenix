@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../auth/AuthProvider'
 import { supabase } from './supabase'
 import type { AppSettings, Payment, Student } from './types'
@@ -6,6 +6,7 @@ import { randomToken } from './utils'
 
 type DataContextValue = {
   loading: boolean
+  tenantError: string | null
   settings: AppSettings
   students: Student[]
   refreshAll: () => Promise<void>
@@ -51,37 +52,65 @@ const DEFAULT_SETTINGS: AppSettings = {
 export function DataProvider({ children }: { children: React.ReactNode }) {
   const { session, loading: authLoading } = useAuth()
   const [loading, setLoading] = useState(true)
+  const [tenantError, setTenantError] = useState<string | null>(null)
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS)
   const [students, setStudents] = useState<Student[]>([])
 
-  async function refreshAllInternal(opts?: { silent?: boolean }) {
-    const silent = !!opts?.silent
-    if (!silent) setLoading(true)
-    try {
-      const [{ data: settingsRow }, { data: st, error: stErr }] = await Promise.all([
-        supabase.from('app_settings').select('*').eq('id', 'default').maybeSingle(),
-        supabase.from('students').select('*'),
-      ])
+  const refreshAllInternal = useCallback(
+    async (opts?: { silent?: boolean }) => {
+      const silent = !!opts?.silent
+      if (!silent) setLoading(true)
+      try {
+        const userId = session?.user?.id
+        if (!userId) {
+          setTenantError(null)
+          setSettings(DEFAULT_SETTINGS)
+          setStudents([])
+          return
+        }
 
-      if (stErr) throw stErr
+        // Multi-tenant: each user must have a profile mapping them to a tenant.
+        const { data: profile, error: profileErr } = await supabase
+          .from('profiles')
+          .select('tenant_id')
+          .eq('user_id', userId)
+          .maybeSingle()
 
-      setSettings((settingsRow as any)?.value ?? DEFAULT_SETTINGS)
-      setStudents((st as any) ?? [])
-    } finally {
-      if (!silent) setLoading(false)
-    }
-  }
+        if (profileErr) throw profileErr
 
-  async function refreshAll() {
-    return refreshAllInternal({ silent: false })
-  }
+        if (!profile?.tenant_id) {
+          setTenantError('This user is not assigned to a Study Room yet. Ask the admin to add a row in public.profiles for your user.')
+          setSettings(DEFAULT_SETTINGS)
+          setStudents([])
+          return
+        }
 
-  async function refreshStudent(studentId: string) {
+        setTenantError(null)
+
+        const [{ data: settingsRow }, { data: st, error: stErr }] = await Promise.all([
+          supabase.from('app_settings').select('*').eq('id', 'default').maybeSingle(),
+          supabase.from('students').select('*'),
+        ])
+
+        if (stErr) throw stErr
+
+        setSettings((settingsRow as any)?.value ?? DEFAULT_SETTINGS)
+        setStudents((st as any) ?? [])
+      } finally {
+        if (!silent) setLoading(false)
+      }
+    },
+    [session?.user?.id],
+  )
+
+  const refreshAll = useCallback(async () => refreshAllInternal({ silent: false }), [refreshAllInternal])
+
+  const refreshStudent = useCallback(async (studentId: string) => {
     if (!studentId) return
     const { data, error } = await supabase.from('students').select('*').eq('id', studentId).single()
     if (error) throw error
     setStudents((prev) => prev.map((s) => (s.id === studentId ? (data as any) : s)))
-  }
+  }, [])
 
   useEffect(() => {
     if(authLoading) return
@@ -89,6 +118,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     if(!session){
       setStudents([])
       setSettings(DEFAULT_SETTINGS)
+      setTenantError(null)
       setLoading(false)
       return
     }
@@ -96,17 +126,17 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     refreshAllInternal({ silent: false }).catch(() => {
       setLoading(false)
     })
-  }, [session, authLoading])
+  }, [session, authLoading, refreshAllInternal])
 
-  async function saveSettings(next: AppSettings) {
+  const saveSettings = useCallback(async (next: AppSettings) => {
     setSettings(next)
     const { error } = await supabase
       .from('app_settings')
-      .upsert({ id: 'default', value: next }, { onConflict: 'id' })
+      .upsert({ id: 'default', value: next }, { onConflict: 'tenant_id,id' })
     if (error) throw error
-  }
+  }, [])
 
-  async function upsertStudent(student: Partial<Student> & { id?: string }) {
+  const upsertStudent = useCallback(async (student: Partial<Student> & { id?: string }) => {
     const payload: any = {
       student_code: student.student_code ?? null,
       full_name: student.full_name,
@@ -143,18 +173,18 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     const { data, error } = await supabase.from('students').insert(payload).select('*').single()
     if (error) throw error
     setStudents((prev) => [...prev, data as any])
-  }
+  }, [])
 
-  async function setStudentStatus(studentId: string, status: 'Active' | 'Inactive') {
+  const setStudentStatus = useCallback(async (studentId: string, status: 'Active' | 'Inactive') => {
     const update: any = { status }
     if(status === 'Inactive') update.seat_number = null
     const { data, error } = await supabase.from('students').update(update).eq('id', studentId).select('*').single()
     if (error) throw error
 
     setStudents((prev) => prev.map((s) => (s.id === studentId ? (data as any) : s)))
-  }
+  }, [])
 
-  async function ensureAdmissionLink(studentId: string): Promise<string> {
+  const ensureAdmissionLink = useCallback(async (studentId: string): Promise<string> => {
     const token = randomToken(24)
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
 
@@ -168,15 +198,15 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     if (error) throw error
     setStudents((prev) => prev.map((s) => (s.id === studentId ? (data as any) : s)))
     return token
-  }
+  }, [])
 
-  async function addPayment(payment: Omit<Payment, 'id' | 'created_at'>): Promise<Payment> {
+  const addPayment = useCallback(async (payment: Omit<Payment, 'id' | 'created_at'>): Promise<Payment> => {
     const { data, error } = await supabase.from('payments').insert(payment as any).select('*').single()
     if (error) throw error
     return data as any as Payment
-  }
+  }, [])
 
-  async function listPaymentsByMonth(month: string): Promise<Payment[]> {
+  const listPaymentsByMonth = useCallback(async (month: string): Promise<Payment[]> => {
     if (!session) return []
     const pageSize = 1000
     const out: Payment[] = []
@@ -195,9 +225,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       if (rows.length < pageSize) break
     }
     return out
-  }
+  }, [session])
 
-  async function listPaymentsByStudent(studentId: string): Promise<Payment[]> {
+  const listPaymentsByStudent = useCallback(async (studentId: string): Promise<Payment[]> => {
     if (!session) return []
     const pageSize = 1000
     const out: Payment[] = []
@@ -216,22 +246,40 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       if (rows.length < pageSize) break
     }
     return out
-  }
+  }, [session])
 
-  const value: DataContextValue = {
-    loading,
-    settings,
-    students,
-    refreshAll,
-    refreshStudent,
-    upsertStudent,
-    setStudentStatus,
-    ensureAdmissionLink,
-    addPayment,
-    listPaymentsByMonth,
-    listPaymentsByStudent,
-    saveSettings,
-  }
+  const value = useMemo<DataContextValue>(
+    () => ({
+      loading,
+      tenantError,
+      settings,
+      students,
+      refreshAll,
+      refreshStudent,
+      upsertStudent,
+      setStudentStatus,
+      ensureAdmissionLink,
+      addPayment,
+      listPaymentsByMonth,
+      listPaymentsByStudent,
+      saveSettings,
+    }),
+    [
+      loading,
+      tenantError,
+      settings,
+      students,
+      refreshAll,
+      refreshStudent,
+      upsertStudent,
+      setStudentStatus,
+      ensureAdmissionLink,
+      addPayment,
+      listPaymentsByMonth,
+      listPaymentsByStudent,
+      saveSettings,
+    ],
+  )
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>
 }

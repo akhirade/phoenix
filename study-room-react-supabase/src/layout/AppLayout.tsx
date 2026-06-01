@@ -42,7 +42,7 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
 
 export function AppLayout() {
   const { signOut, session } = useAuth()
-  const { settings, students } = useData()
+  const { settings, students, tenantError } = useData()
   const { theme, toggleTheme } = useTheme()
   const { locale, toggleLocale, t } = useI18n()
   const navigate = useNavigate()
@@ -146,7 +146,24 @@ export function AppLayout() {
         </aside>
 
         <main className="rounded-xl border border-slate-200 bg-white/70 p-4 dark:border-slate-800 dark:bg-slate-900/30">
-          <Outlet />
+          {tenantError ? (
+            <div className="sr-card p-4">
+              <div className="text-base font-semibold">Setup required</div>
+              <div className="mt-1 text-sm text-slate-700 dark:text-slate-300">{tenantError}</div>
+              {session?.user?.email ? (
+                <div className="mt-2 text-xs text-slate-600 dark:text-slate-400">
+                  Logged in as <span className="font-medium">{session.user.email}</span>
+                </div>
+              ) : null}
+              <div className="mt-4 flex items-center gap-2">
+                <button className="sr-btn" type="button" onClick={() => signOut()}>
+                  {t('logout')}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <Outlet />
+          )}
         </main>
       </div>
 

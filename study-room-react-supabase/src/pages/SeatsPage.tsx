@@ -17,7 +17,7 @@ export function SeatsPage() {
   const { t } = useI18n()
   const monthKey = monthKeyFromDate(new Date())
   const seatsTotal = Number(settings.totalSeats || 45)
-  const [monthPayments, setMonthPayments] = useState<Payment[]>([])
+  const [monthPayments, setMonthPayments] = useState<Payment[] | null>(null)
   const [profileId, setProfileId] = useState<string | null>(null)
   const [profileOpen, setProfileOpen] = useState(false)
   const [addSeat, setAddSeat] = useState<number | null>(null)
@@ -25,6 +25,7 @@ export function SeatsPage() {
 
   useEffect(() => {
     let cancelled = false
+    setMonthPayments(null)
     listPaymentsByMonth(monthKey)
       .then((rows) => {
         if (cancelled) return
@@ -42,20 +43,24 @@ export function SeatsPage() {
   const seatMap = useMemo(() => {
     const active = students.filter((s) => s.status === 'Active' && s.seat_number)
     const paidByStudent = new Map<string, number>()
-    for (const p of monthPayments) {
-      if (!p.student_id) continue
-      paidByStudent.set(p.student_id, (paidByStudent.get(p.student_id) || 0) + Number(p.amount_paid || 0))
+    if (monthPayments) {
+      for (const p of monthPayments) {
+        if (!p.student_id) continue
+        paidByStudent.set(p.student_id, (paidByStudent.get(p.student_id) || 0) + Number(p.amount_paid || 0))
+      }
     }
 
     const map = new Map<number, SeatState>()
     for (const s of active) {
+      if (!monthPayments) {
+        // Avoid flicker: don't guess pending status until payments load.
+        map.set(s.seat_number!, { kind: 'occupied', studentId: s.id, name: s.full_name })
+        continue
+      }
       const paid = paidByStudent.get(s.id) || 0
       const due = Math.max(0, Number(s.monthly_fee || 0) - paid)
-      if (due > 0) {
-        map.set(s.seat_number!, { kind: 'pending', studentId: s.id, name: s.full_name, due })
-      } else {
-        map.set(s.seat_number!, { kind: 'occupied', studentId: s.id, name: s.full_name })
-      }
+      if (due > 0) map.set(s.seat_number!, { kind: 'pending', studentId: s.id, name: s.full_name, due })
+      else map.set(s.seat_number!, { kind: 'occupied', studentId: s.id, name: s.full_name })
     }
     return map
   }, [students, monthPayments])
@@ -86,6 +91,8 @@ export function SeatsPage() {
           {t('addManageStudents')}
         </Link>
       </div>
+
+      {monthPayments === null ? <div className="mt-3 text-sm text-slate-400">{t('loading')}</div> : null}
 
       <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 sm:gap-3">
         {seatNumbers(seatsTotal).map((n) => {

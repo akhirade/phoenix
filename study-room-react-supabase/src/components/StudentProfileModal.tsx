@@ -458,7 +458,7 @@ export function StudentProfileModal({
                 <div className="mt-3 flex items-center gap-2 overflow-x-auto pb-1">
                   {activation && (!activation.hasSeat || !activation.paidThisMonth) ? (
                     <button
-                      className="sr-btn-sm shrink-0"
+                      className="sr-btn shrink-0"
                       type="button"
                       onClick={() => {
                         setMode('edit')
@@ -470,7 +470,7 @@ export function StudentProfileModal({
                   ) : null}
 
                   <button
-                    className="sr-btn-sm shrink-0"
+                    className="sr-btn shrink-0"
                     type="button"
                     onClick={async () => {
                       try {
@@ -488,7 +488,7 @@ export function StudentProfileModal({
                   </button>
 
                   <button
-                    className="sr-btn-sm shrink-0"
+                    className="sr-btn shrink-0"
                     type="button"
                     onClick={async () => {
                       try {
@@ -507,7 +507,7 @@ export function StudentProfileModal({
                   </button>
 
                   <button
-                    className="sr-btn-sm shrink-0"
+                    className="sr-btn shrink-0"
                     type="button"
                     onClick={async () => {
                       try {
@@ -526,7 +526,7 @@ export function StudentProfileModal({
                   </button>
 
                   <button
-                    className="sr-btn-primary-sm shrink-0"
+                    className="sr-btn-primary shrink-0"
                     type="button"
                     onClick={async () => {
                       try {
@@ -550,7 +550,7 @@ export function StudentProfileModal({
                     {t('sendWhatsApp')}
                   </button>
 
-                  <Link className="sr-btn-sm shrink-0" to={`/admission/print/${student.id}`} onClick={onClose}>
+                  <Link className="sr-btn shrink-0" to={`/admission/print/${student.id}`} onClick={onClose}>
                     {t('printAdmissionForm')}
                   </Link>
                 </div>

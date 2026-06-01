@@ -1,6 +1,16 @@
 @tailwind base;
 @tailwind utilities;
 
+@layer base {
+  html {
+    @apply bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100;
+  }
+
+  body {
+    @apply bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100;
+  }
+}
+
 html, body, #root {
   height: 100%;
 }

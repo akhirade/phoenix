@@ -205,6 +205,22 @@ export function StudentsPage() {
     })
   }
 
+  async function toggleActiveInactive(s: Student) {
+    try {
+      if (s.status === 'Active') {
+        await setStudentStatus(s.id, 'Inactive')
+        toast.success(t('studentMarkedInactive'))
+        return
+      }
+
+      await setStudentStatus(s.id, 'Active')
+      toast.success(t('studentMarkedActive'))
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : t('saveFailed')
+      setError(msg)
+    }
+  }
+
   return (
     <div>
       <div className="flex items-start justify-between gap-3">
@@ -283,13 +299,7 @@ export function StudentsPage() {
                     </button>
                     <button
                       className="sr-btn-sm"
-                      onClick={() =>
-                        s.status === 'Active'
-                          ? setStudentStatus(s.id, 'Inactive').catch((e) => setError(e?.message || t('saveFailed')))
-                          : !s.seat_number
-                            ? promptActivateAssignSeat(s)
-                            : setStudentStatus(s.id, 'Active').catch((e) => setError(e?.message || t('saveFailed')))
-                      }
+                      onClick={() => (s.status !== 'Active' && !s.seat_number ? promptActivateAssignSeat(s) : toggleActiveInactive(s))}
                     >
                       {s.status === 'Active' ? t('markInactive') : t('markActive')}
                     </button>
@@ -347,13 +357,7 @@ export function StudentsPage() {
                         </button>
                         <button
                           className="ml-2 sr-btn-sm"
-                          onClick={() =>
-                            s.status === 'Active'
-                              ? setStudentStatus(s.id, 'Inactive').catch((e) => setError(e?.message || t('saveFailed')))
-                              : !s.seat_number
-                                ? promptActivateAssignSeat(s)
-                                : setStudentStatus(s.id, 'Active').catch((e) => setError(e?.message || t('saveFailed')))
-                          }
+                          onClick={() => (s.status !== 'Active' && !s.seat_number ? promptActivateAssignSeat(s) : toggleActiveInactive(s))}
                         >
                           {s.status === 'Active' ? t('markInactive') : t('markActive')}
                         </button>

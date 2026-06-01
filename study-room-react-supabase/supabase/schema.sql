@@ -4,17 +4,52 @@
 -- Enable UUID generation
 create extension if not exists pgcrypto;
 
+-- Tenants (study rooms)
+create table if not exists public.tenants (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  created_at timestamptz not null default now()
+);
+
+create unique index if not exists tenants_name_unique on public.tenants (name);
+
+-- Profiles: map authenticated users to a tenant
+create table if not exists public.profiles (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  tenant_id uuid not null references public.tenants(id) on delete restrict,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists profiles_tenant_id_idx on public.profiles (tenant_id);
+
+create or replace function public.current_tenant_id()
+returns uuid
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select p.tenant_id
+  from public.profiles p
+  where p.user_id = auth.uid();
+$$;
+
 -- App settings (single row: id = 'default')
 create table if not exists public.app_settings (
-  id text primary key,
+  tenant_id uuid not null default public.current_tenant_id(),
+  id text not null,
   value jsonb not null default '{}'::jsonb,
   updated_at timestamptz not null default now(),
   created_at timestamptz not null default now()
 );
 
+alter table public.app_settings drop constraint if exists app_settings_pkey;
+alter table public.app_settings add constraint app_settings_pkey primary key (tenant_id, id);
+
 -- Students
 create table if not exists public.students (
   id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null default public.current_tenant_id(),
   student_code text unique,
   full_name text not null,
   mobile text,
@@ -64,17 +99,21 @@ where admission_token is not null;
 -- Unique mobile number (normalized digits) for data quality
 -- NOTE: Creating this index will fail if duplicates already exist.
 create unique index if not exists students_mobile_unique
-on public.students ((regexp_replace(coalesce(mobile, ''), '[^0-9]+', '', 'g')))
+on public.students (
+  tenant_id,
+  (regexp_replace(coalesce(mobile, ''), '[^0-9]+', '', 'g'))
+)
 where regexp_replace(coalesce(mobile, ''), '[^0-9]+', '', 'g') <> '';
 
 -- One active student per seat (business rule)
 create unique index if not exists students_unique_active_seat
-on public.students (seat_number)
+on public.students (tenant_id, seat_number)
 where status = 'Active' and seat_number is not null;
 
 -- Payments (keep history even if student changes/deletes)
 create table if not exists public.payments (
   id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null default public.current_tenant_id(),
   student_id uuid references public.students(id) on delete set null,
   student_name text not null,
   seat_number int,

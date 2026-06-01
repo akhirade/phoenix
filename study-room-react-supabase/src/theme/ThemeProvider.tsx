@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import React, { createContext, useContext, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 
 export type ThemeMode = 'dark' | 'light'
 
@@ -35,13 +35,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
   })
 
+  // Apply theme before paint to avoid flicker.
+  useLayoutEffect(() => {
+    applyThemeToDocument(theme)
+  }, [theme])
+
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, theme)
     } catch {
       // ignore
     }
-    applyThemeToDocument(theme)
   }, [theme])
 
   const value = useMemo<ThemeContextValue>(
