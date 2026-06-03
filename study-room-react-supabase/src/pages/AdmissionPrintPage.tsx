@@ -1,14 +1,49 @@
-import React, { useEffect, useMemo } from 'react'
+import html2canvas from 'html2canvas'
+import { jsPDF } from 'jspdf'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useData } from '../lib/DataProvider'
 import { useI18n } from '../i18n/I18nProvider'
 import { formatLocalDate, formatLocalDateTime } from '../lib/utils'
+
+function ShareIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d="M12 3v12" />
+      <path d="M8 7l4-4 4 4" />
+      <path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" />
+    </svg>
+  )
+}
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  window.setTimeout(() => URL.revokeObjectURL(url), 1500)
+}
 
 export function AdmissionPrintPage() {
   const { studentId } = useParams()
   const navigate = useNavigate()
   const { students, settings } = useData()
   const { t, locale } = useI18n()
+  const contentRef = useRef<HTMLDivElement | null>(null)
+  const [sharing, setSharing] = useState(false)
 
   const intlLocale = locale === 'mr' ? 'mr-IN' : 'en-IN'
 
@@ -51,6 +86,56 @@ export function AdmissionPrintPage() {
     window.setTimeout(() => goBack(), 50)
   }
 
+  const sharePdf = async () => {
+    const el = contentRef.current
+    if (!el || sharing) return
+
+    setSharing(true)
+    try {
+      const canvas = await html2canvas(el, {
+        scale: Math.min(2, window.devicePixelRatio || 1),
+        useCORS: true,
+        backgroundColor: '#ffffff',
+      })
+
+      const pdf = new jsPDF({ orientation: 'p', unit: 'pt', format: 'a4' })
+      const pageWidth = pdf.internal.pageSize.getWidth()
+      const pageHeight = pdf.internal.pageSize.getHeight()
+
+      const imgData = canvas.toDataURL('image/jpeg', 0.92)
+      // Fit entire content onto a single A4 page (no splitting).
+      const scale = Math.min(pageWidth / canvas.width, pageHeight / canvas.height)
+      const imgWidth = canvas.width * scale
+      const imgHeight = canvas.height * scale
+      const x = (pageWidth - imgWidth) / 2
+      const y = (pageHeight - imgHeight) / 2
+
+      pdf.addImage(imgData, 'JPEG', x, y, imgWidth, imgHeight)
+
+      const blob = pdf.output('blob')
+      const safeName = (student.full_name || 'Student').trim().replace(/\s+/g, ' ')
+      const filename = `Admission Form - ${safeName}.pdf`
+      const file = new File([blob], filename, { type: 'application/pdf' })
+
+      const canShareFiles =
+        typeof navigator !== 'undefined' &&
+        'canShare' in navigator &&
+        typeof (navigator as any).canShare === 'function' &&
+        (navigator as any).canShare({ files: [file] })
+
+      if (typeof navigator !== 'undefined' && 'share' in navigator && canShareFiles) {
+        await (navigator as any).share({
+          title: document.title,
+          files: [file],
+        })
+      } else {
+        downloadBlob(blob, filename)
+      }
+    } finally {
+      setSharing(false)
+    }
+  }
+
   return (
     <div className="sr-card p-4 sr-print">
       <div className="flex items-start justify-between gap-3 print:hidden">
@@ -59,8 +144,15 @@ export function AdmissionPrintPage() {
           <div className="sr-subtitle">{student.full_name}</div>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
-          <button className="sr-btn" type="button" onClick={goBack}>
-            {t('back')}
+          <button
+            className="sr-btn"
+            type="button"
+            onClick={sharePdf}
+            disabled={sharing}
+            aria-label="Share PDF"
+            title="Share PDF"
+          >
+            <ShareIcon className="h-5 w-5" />
           </button>
           <button className="sr-btn" type="button" onClick={closePage}>
             {t('close')}
@@ -71,7 +163,7 @@ export function AdmissionPrintPage() {
         </div>
       </div>
 
-      <div className="mt-3">
+      <div className="mt-3" ref={contentRef}>
         <div className="text-center">
           <div className="text-lg font-semibold">{settings.centerName || t('appName')}</div>
           {settings.centerAddress ? (

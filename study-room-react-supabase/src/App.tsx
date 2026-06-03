@@ -4,6 +4,7 @@ import { AppLayout } from './layout/AppLayout'
 import { AdmissionPrintPage } from './pages/AdmissionPrintPage'
 import { AdmissionPublicPage } from './pages/AdmissionPublicPage'
 import { DashboardPage } from './pages/DashboardPage'
+import { LandingPage } from './pages/LandingPage'
 import { LoginPage } from './pages/LoginPage'
 import { PaymentsPage } from './pages/PaymentsPage'
 import { ReportsPage } from './pages/ReportsPage'
@@ -14,13 +15,13 @@ import { StudentsPage } from './pages/StudentsPage'
 export default function App() {
   return (
     <Routes>
+      <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
 
       <Route path="/admission/:token" element={<AdmissionPublicPage />} />
 
       <Route element={<RequireAuth />}>
         <Route element={<AppLayout />}>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/students" element={<StudentsPage />} />
           <Route path="/seats" element={<SeatsPage />} />
@@ -31,7 +32,7 @@ export default function App() {
         </Route>
       </Route>
 
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }

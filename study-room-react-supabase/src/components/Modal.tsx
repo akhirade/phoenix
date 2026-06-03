@@ -5,12 +5,14 @@ export function Modal({
   open,
   title,
   subtitle,
+  subtitleRight,
   children,
   onClose,
 }: {
   open: boolean
   title: string
   subtitle?: string
+  subtitleRight?: ReactNode
   children: ReactNode
   onClose: () => void
 }) {
@@ -51,7 +53,12 @@ export function Modal({
         <div className="flex items-start justify-between gap-3 border-b border-slate-200 p-3 sm:p-4 dark:border-slate-800">
           <div>
             <div className="text-base font-semibold">{title}</div>
-            {subtitle ? <div className="mt-0.5 text-xs text-slate-600 dark:text-slate-400">{subtitle}</div> : null}
+            {subtitle || subtitleRight ? (
+              <div className="mt-0.5 flex items-center justify-between gap-2 text-xs text-slate-600 dark:text-slate-400">
+                <div className="min-w-0 truncate">{subtitle ?? ''}</div>
+                {subtitleRight ? <div className="shrink-0">{subtitleRight}</div> : null}
+              </div>
+            ) : null}
           </div>
           <button
             className="sr-btn shrink-0"

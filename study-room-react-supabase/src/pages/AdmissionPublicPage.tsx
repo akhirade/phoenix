@@ -72,7 +72,7 @@ export function AdmissionPublicPage() {
 
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 px-4 py-6">
+    <div className="min-h-screen overflow-x-hidden bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 px-4 py-6">
       <div className="mx-auto max-w-2xl">
         <div className="sr-card p-5">
           <div className="text-lg font-semibold">{t('admissionFormTitle')}</div>
@@ -80,7 +80,7 @@ export function AdmissionPublicPage() {
           {center ? (
             <div className="mt-1 text-sm text-slate-600 dark:text-slate-400">
               <div className="font-medium">{center.name}</div>
-              {center.address ? <div className="whitespace-pre-line">{center.address}</div> : null}
+              {center.address ? <div className="whitespace-pre-line break-words">{center.address}</div> : null}
               {center.phone ? <div>{center.phone}</div> : null}
             </div>
           ) : null}
@@ -300,7 +300,7 @@ function AdmissionPublicForm({
           <div className="font-medium text-sm">{t('termsAndConditions')}</div>
           <div className="mt-2 space-y-1 text-slate-700 dark:text-slate-200">
             {termsLines.map((line, idx) => (
-              <div key={idx} className="whitespace-pre-line">
+              <div key={idx} className="whitespace-pre-line break-words">
                 {line}
               </div>
             ))}

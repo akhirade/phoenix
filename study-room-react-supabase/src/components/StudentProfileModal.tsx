@@ -8,6 +8,78 @@ import { Tag } from './Tag'
 import { useToast } from './ToastProvider'
 import { useI18n } from '../i18n/I18nProvider'
 
+function ActivationStepper({
+  seatDone,
+  paymentDone,
+  monthKey,
+  submittedAt,
+  intlLocale,
+}: {
+  seatDone: boolean
+  paymentDone: boolean
+  monthKey: string
+  submittedAt: string
+  intlLocale: string
+}) {
+  const { t } = useI18n()
+  const complete = seatDone && paymentDone
+
+  const steps = [
+    { key: 'admission', label: t('admissionSubmitted'), done: true, meta: `${t('submittedAt')}: ${formatLocalDateTime(submittedAt, intlLocale)}` },
+    { key: 'seat', label: t('checkSeatAssigned'), done: seatDone },
+    { key: 'payment', label: t('checkPaymentThisMonth', { month: monthKey }), done: paymentDone },
+  ]
+
+  return (
+    <div className="mt-3 sr-card-soft p-3">
+      <div className="flex items-center justify-between gap-2">
+        <div className="font-medium text-sm">{t('activationChecklist')}</div>
+        {complete ? <Tag kind="good">{t('activationComplete')}</Tag> : <Tag kind="warn">{t('activationPending')}</Tag>}
+      </div>
+
+      <ol className="mt-3 flex flex-col gap-3 md:flex-row md:items-start md:gap-3">
+        {steps.map((s, idx) => (
+          <li key={s.key} className="flex min-w-0 items-start">
+            <div className="flex w-6 flex-col items-center shrink-0">
+              <span
+                className={[
+                  'inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold border',
+                  s.done
+                    ? 'border-emerald-600/30 bg-emerald-50 text-emerald-800 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-100'
+                    : 'border-slate-300 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200',
+                ].join(' ')}
+              >
+                {idx + 1}
+              </span>
+
+              {idx < steps.length - 1 ? (
+                <span
+                  className="mt-1 inline-flex h-4 w-6 items-center justify-center text-slate-400 dark:text-slate-600 md:hidden rotate-90 leading-none"
+                  aria-hidden="true"
+                >
+                  →
+                </span>
+              ) : null}
+            </div>
+
+            <div className="min-w-0 pl-2">
+              <div className="text-sm font-medium text-slate-900 dark:text-slate-100">{s.label}</div>
+              <div className="text-xs text-slate-600 dark:text-slate-400">{s.done ? t('done') : t('pending')}</div>
+              {'meta' in s && s.meta ? <div className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-500">{s.meta}</div> : null}
+            </div>
+
+            {idx < steps.length - 1 ? (
+              <span className="hidden md:inline-flex self-center mx-3 shrink-0 select-none text-slate-400 dark:text-slate-600" aria-hidden="true">
+                →
+              </span>
+            ) : null}
+          </li>
+        ))}
+      </ol>
+    </div>
+  )
+}
+
 export function StudentProfileModal({
   open,
   studentId,
@@ -166,6 +238,13 @@ export function StudentProfileModal({
       }}
       title={mode === 'edit' ? t('editStudent') : t('studentProfile')}
       subtitle={student ? student.full_name : undefined}
+      subtitleRight={
+        student ? (
+          <Tag kind={student.status === 'Active' ? 'good' : 'bad'}>
+            {student.status === 'Active' ? t('active') : t('inactive')}
+          </Tag>
+        ) : undefined
+      }
     >
       {student ? (
         <div ref={bodyRef} className="space-y-3">
@@ -427,14 +506,7 @@ export function StudentProfileModal({
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <Info label={t('seat')} value={student.seat_number ? String(student.seat_number) : '-'} />
                 <Info label={t('joiningDate')} value={formatLocalDate(student.joining_date, intlLocale)} />
-                <Info
-                  label={t('status')}
-                  value={
-                    <Tag kind={student.status === 'Active' ? 'good' : 'bad'}>
-                      {student.status === 'Active' ? t('active') : t('inactive')}
-                    </Tag>
-                  }
-                />
+                <Info label={t('preparingExam')} value={student.preparing_exam ?? '-'} />
               </div>
 
               <Accordion
@@ -456,7 +528,7 @@ export function StudentProfileModal({
                 </div>
 
                 <div className="mt-3 flex items-center gap-2 overflow-x-auto pb-1">
-                  {activation && (!activation.hasSeat || !activation.paidThisMonth) ? (
+                  {activation && !activation.hasSeat ? (
                     <button
                       className="sr-btn shrink-0"
                       type="button"
@@ -468,6 +540,8 @@ export function StudentProfileModal({
                       {t('startActivation')}
                     </button>
                   ) : null}
+
+                  {/** Intentionally hide a duplicate Record Payment CTA here. */}
 
                   <button
                     className="sr-btn shrink-0"
@@ -555,32 +629,22 @@ export function StudentProfileModal({
                   </Link>
                 </div>
 
-                {activation ? (
-                  <div className="mt-3 sr-card-soft p-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="font-medium text-sm">{t('activationChecklist')}</div>
-                      {activation.hasSeat && activation.hasFee && activation.paidThisMonth ? (
-                        <Tag kind="good">{t('activationComplete')}</Tag>
-                      ) : (
-                        <Tag kind="warn">{t('activationPending')}</Tag>
-                      )}
-                    </div>
-
-                    <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                      <Info label={t('checkSeatAssigned')} value={activation.hasSeat ? t('done') : t('pending')} />
-                      <Info label={t('checkPaymentThisMonth', { month: monthKey })} value={activation.paidThisMonth ? t('done') : t('pending')} />
-                    </div>
-                  </div>
+                {activation && student.admission_submitted_at ? (
+                  <ActivationStepper
+                    seatDone={!!activation.hasSeat}
+                    paymentDone={!!activation.paidThisMonth}
+                    monthKey={monthKey}
+                    submittedAt={student.admission_submitted_at}
+                    intlLocale={intlLocale}
+                  />
                 ) : null}
 
-                <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                  <Info label={t('submittedAt')} value={formatLocalDateTime(student.admission_submitted_at, intlLocale)} />
+                <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
                   <Info label={t('signatureName')} value={student.admission_signature_name ?? '-'} />
                   <Info label={t('email')} value={student.email ?? '-'} />
                   <Info label={t('birthDate')} value={formatLocalDate(student.birth_date, intlLocale)} />
                   <Info label={t('gender')} value={student.gender ?? '-'} />
                   <Info label={t('emergencyContact')} value={student.emergency_contact ?? '-'} />
-                  <Info label={t('preparingExam')} value={student.preparing_exam ?? '-'} />
                   <Info label={t('firstPaymentReceiptNo')} value={student.first_payment_receipt_no ?? '-'} />
                 </div>
 
