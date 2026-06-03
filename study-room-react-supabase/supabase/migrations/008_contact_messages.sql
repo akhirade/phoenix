@@ -29,6 +29,16 @@ with check (
   and char_length(message) between 1 and 2000
 );
 
+-- Staff: allow inserts as well (e.g., if logged in and testing the landing form).
+drop policy if exists "contact_messages_insert_auth" on public.contact_messages;
+create policy "contact_messages_insert_auth" on public.contact_messages
+for insert to authenticated
+with check (
+  char_length(full_name) between 1 and 120
+  and char_length(phone) between 5 and 32
+  and char_length(message) between 1 and 2000
+);
+
 -- Admin/staff: allow reading messages.
 drop policy if exists "contact_messages_select_auth" on public.contact_messages;
 create policy "contact_messages_select_auth" on public.contact_messages

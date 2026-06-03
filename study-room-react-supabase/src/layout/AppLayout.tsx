@@ -1,9 +1,53 @@
-import { useEffect, useMemo, useState } from 'react'
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthProvider'
 import { useData } from '../lib/DataProvider'
+import { supabase } from '../lib/supabase'
 import { useTheme } from '../theme/ThemeProvider'
 import { useI18n } from '../i18n/I18nProvider'
+
+function AdmissionIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d="M7 3h7l3 3v15a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" />
+      <path d="M14 3v4a2 2 0 0 0 2 2h4" />
+      <path d="M9 13h6" />
+      <path d="M9 17h6" />
+    </svg>
+  )
+}
+
+function EnquiryIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d="M4 6h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6l-4 3V8a2 2 0 0 1 2-2Z" />
+      <path d="M8 11h8" />
+      <path d="M8 15h5" />
+    </svg>
+  )
+}
 
 function PhoenixLogo({ className }: { className?: string }) {
   return (
@@ -52,17 +96,66 @@ export function AppLayout() {
     return `phoenix-admissions-seen-at:${email}`
   }, [session?.user?.email])
 
+  const enquiriesStorageKey = useMemo(() => {
+    const email = session?.user?.email || 'anon'
+    return `phoenix-enquiries-seen-at:${email}`
+  }, [session?.user?.email])
+
   const [seenAt, setSeenAt] = useState<number>(() => {
     const raw = localStorage.getItem(storageKey)
     const n = raw ? Number(raw) : 0
     return Number.isFinite(n) ? n : 0
   })
 
+  const [unreadEnquiriesCount, setUnreadEnquiriesCount] = useState(0)
+
   useEffect(() => {
     const raw = localStorage.getItem(storageKey)
     const n = raw ? Number(raw) : 0
     setSeenAt(Number.isFinite(n) ? n : 0)
   }, [storageKey])
+
+  const loadUnreadEnquiriesCount = useCallback(async () => {
+    if (!session?.user) return
+
+    const raw = localStorage.getItem(enquiriesStorageKey)
+    const n = raw ? Number(raw) : 0
+    const currentSeenAt = Number.isFinite(n) ? n : 0
+
+    const sinceIso = new Date(currentSeenAt || 0).toISOString()
+    const { count, error } = await supabase
+      .from('contact_messages')
+      .select('id', { count: 'exact', head: true })
+      .gt('created_at', sinceIso)
+
+    if (error) {
+      setUnreadEnquiriesCount(0)
+      return
+    }
+
+    setUnreadEnquiriesCount(count ?? 0)
+  }, [enquiriesStorageKey, session?.user])
+
+  useEffect(() => {
+    let cancelled = false
+
+    const tick = async () => {
+      if (cancelled) return
+      await loadUnreadEnquiriesCount()
+    }
+
+    void tick()
+    const id = window.setInterval(() => void tick(), 60000)
+
+    const onSeen = () => void tick()
+    window.addEventListener('phoenix-enquiries-seen', onSeen)
+
+    return () => {
+      cancelled = true
+      window.clearInterval(id)
+      window.removeEventListener('phoenix-enquiries-seen', onSeen)
+    }
+  }, [loadUnreadEnquiriesCount])
 
   const newAdmissionsCount = useMemo(() => {
     if (!students?.length) return 0
@@ -79,6 +172,13 @@ export function AppLayout() {
     setSeenAt(now)
   }
 
+  const markEnquiriesSeen = () => {
+    const now = Date.now()
+    localStorage.setItem(enquiriesStorageKey, String(now))
+    setUnreadEnquiriesCount(0)
+    window.dispatchEvent(new Event('phoenix-enquiries-seen'))
+  }
+
   const year = new Date().getFullYear()
   const trademarkText = 'Phoenix™'
   const copyrightText = `© ${year} Ashish Khirade. All rights reserved.`
@@ -88,10 +188,10 @@ export function AppLayout() {
       <header className="border-b border-slate-200 bg-white/80 backdrop-blur dark:border-slate-800 dark:bg-slate-950/80">
         <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between gap-3">
           <div>
-            <div className="flex items-center gap-2">
+            <Link to="/" className="inline-flex items-center gap-2 hover:opacity-90" aria-label={t('appName')}>
               <PhoenixLogo className="h-8 w-8 text-rose-600 dark:text-rose-400" />
               <div className="font-semibold">{(settings.centerName || t('appName')).trim()}</div>
-            </div>
+            </Link>
             {session?.user?.email ? (
               <div className="text-xs text-slate-600 dark:text-slate-400">
                 {t('headerLoggedInAs', { email: session.user.email })}
@@ -99,23 +199,47 @@ export function AppLayout() {
             ) : null}
           </div>
           <div className="flex items-center justify-end gap-2 shrink-0 flex-nowrap">
-            {newAdmissionsCount > 0 ? (
-              <button
-                className="sr-btn"
-                type="button"
-                onClick={() => {
-                  markAdmissionsSeen()
-                  navigate('/dashboard')
-                }}
-              >
-                <span className="inline-flex items-center gap-2">
-                  <span className="font-medium">{t('newAdmissions')}</span>
-                  <span className="inline-flex items-center rounded-full border border-emerald-600/30 bg-emerald-50 px-2 py-0.5 text-xs text-emerald-800 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-100">
-                    {t('countN', { n: newAdmissionsCount })}
+            <button
+              className="sr-btn"
+              type="button"
+              onClick={() => {
+                markAdmissionsSeen()
+                navigate('/dashboard')
+              }}
+              aria-label={t('newAdmissions')}
+              title={t('newAdmissions')}
+            >
+              <span className="relative inline-flex items-center">
+                <AdmissionIcon className="h-5 w-5" />
+                <span className="sr-only">{t('newAdmissions')}</span>
+                {newAdmissionsCount > 0 ? (
+                  <span className="absolute -right-2 -top-2 inline-flex min-w-[1.25rem] justify-center rounded-full border border-emerald-600/30 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-emerald-800 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-100">
+                    {newAdmissionsCount}
                   </span>
-                </span>
-              </button>
-            ) : null}
+                ) : null}
+              </span>
+            </button>
+
+            <button
+              className="sr-btn"
+              type="button"
+              onClick={() => {
+                markEnquiriesSeen()
+                navigate('/enquiries')
+              }}
+              aria-label={t('navEnquiries')}
+              title={t('navEnquiries')}
+            >
+              <span className="relative inline-flex items-center">
+                <EnquiryIcon className="h-5 w-5" />
+                <span className="sr-only">{t('navEnquiries')}</span>
+                {unreadEnquiriesCount > 0 ? (
+                  <span className="absolute -right-2 -top-2 inline-flex min-w-[1.25rem] justify-center rounded-full border border-rose-600/30 bg-rose-50 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-rose-800 dark:border-rose-500/25 dark:bg-rose-500/10 dark:text-rose-100">
+                    {unreadEnquiriesCount}
+                  </span>
+                ) : null}
+              </span>
+            </button>
             <button className="sr-btn" type="button" onClick={toggleLocale} aria-label="Toggle language">
               {locale === 'en' ? t('langEnglish') : t('langMarathi')}
             </button>
@@ -141,6 +265,7 @@ export function AppLayout() {
             <NavLink to="/seats" className={linkClass}>{t('navSeats')}</NavLink>
             <NavLink to="/payments" className={linkClass}>{t('navPayments')}</NavLink>
             <NavLink to="/reports" className={linkClass}>{t('navReports')}</NavLink>
+            <NavLink to="/enquiries" className={linkClass}>{t('navEnquiries')}</NavLink>
             <NavLink to="/settings" className={linkClass}>{t('navSettings')}</NavLink>
           </nav>
         </aside>

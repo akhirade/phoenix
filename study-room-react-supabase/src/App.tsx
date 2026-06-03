@@ -4,6 +4,7 @@ import { AppLayout } from './layout/AppLayout'
 import { AdmissionPrintPage } from './pages/AdmissionPrintPage'
 import { AdmissionPublicPage } from './pages/AdmissionPublicPage'
 import { DashboardPage } from './pages/DashboardPage'
+import { EnquiriesPage } from './pages/EnquiriesPage'
 import { LandingPage } from './pages/LandingPage'
 import { LoginPage } from './pages/LoginPage'
 import { PaymentsPage } from './pages/PaymentsPage'
@@ -27,6 +28,7 @@ export default function App() {
           <Route path="/seats" element={<SeatsPage />} />
           <Route path="/payments" element={<PaymentsPage />} />
           <Route path="/reports" element={<ReportsPage />} />
+          <Route path="/enquiries" element={<EnquiriesPage />} />
           <Route path="/admission/print/:studentId" element={<AdmissionPrintPage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Route>

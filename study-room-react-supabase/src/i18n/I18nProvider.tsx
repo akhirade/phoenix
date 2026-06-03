@@ -2,11 +2,16 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from '
 
 export type Locale = 'en' | 'mr'
 
+type I18nVars = Record<string, string | number | null | undefined>
+
 type I18nContextValue = {
   locale: Locale
   setLocale: (next: Locale) => void
   toggleLocale: () => void
-  t: (key: keyof typeof MESSAGES['en'], vars?: Record<string, string | number | null | undefined>) => string
+  t: {
+    <K extends keyof typeof MESSAGES['en']>(key: K, vars?: I18nVars): string
+    (key: string, vars?: I18nVars): string
+  }
 }
 
 const I18nContext = createContext<I18nContextValue | null>(null)
@@ -277,6 +282,7 @@ const MESSAGES = {
     navSeats: 'Seats',
     navPayments: 'Payments',
     navReports: 'Reports',
+    navEnquiries: 'Enquiries',
     navSettings: 'Settings',
 
     loginTitle: 'Admin Login',
@@ -286,6 +292,130 @@ const MESSAGES = {
     login: 'Login',
     signingIn: 'Signing in…',
     tipInviteOnly: 'Tip: In Supabase Auth settings, disable public signups and invite only your staff.',
+
+    enquiriesTitle: 'Enquiries',
+    enquiriesSubtitle: 'Messages submitted from the public website form.',
+    enquiriesRefresh: 'Refresh',
+    enquiriesEmpty: 'No enquiries yet.',
+    enquiriesLoadFailed: 'Could not load enquiries',
+    enquiriesColDate: 'Date',
+    enquiriesColName: 'Name',
+    enquiriesColPhone: 'Mobile',
+    enquiriesColEmail: 'Email',
+    enquiriesColMessage: 'Message',
+
+    landingLocation: 'Amravati, Maharashtra',
+    landingNavFacilities: 'Facilities',
+    landingNavPlans: 'Plans',
+    landingNavEnquiry: 'Enquiry',
+    landingEnquiriesOpen: 'Enquiries open',
+
+    landingHeroTitle: 'A study room that makes you feel serious.',
+    landingHeroSubtitle:
+      'Quiet, comfortable, and designed for focus. If you are preparing for exams and want consistency, Phoenix is built for you.',
+    landingCtaEnquireNow: 'Enquire Now',
+    landingCtaSeeFacilities: 'See Facilities',
+
+    landingMiniStatSeats: 'Seats',
+    landingMiniStatSeatsValue: 'Dedicated',
+    landingMiniStatEnvironment: 'Environment',
+    landingMiniStatEnvironmentValue: 'Quiet',
+    landingMiniStatCity: 'City',
+    landingMiniStatCityValue: 'Amravati',
+
+    landingQuickHighlights: 'Quick Highlights',
+    landingQuickHighlightsSubtitle: 'What students typically look for.',
+    landingPrev: 'Prev',
+    landingNext: 'Next',
+
+    landingHighlightComfort: 'Comfort',
+    landingHighlightComfortDetail: 'Designed for long study hours with a clean setup.',
+    landingHighlightDiscipline: 'Discipline',
+    landingHighlightDisciplineDetail: 'A focus-first atmosphere that supports routine.',
+    landingHighlightProcess: 'Simple process',
+    landingHighlightProcessDetail: 'Enquire → visit → confirm your seat and start.',
+    landingHighlightTransparent: 'Transparent',
+    landingHighlightTransparentDetail: 'Clear communication about timings and plans.',
+    landingHighlightsNote: 'For admission and seat allocation, send an enquiry and we’ll guide you with the next steps.',
+
+    landingFacilitiesTitle: 'Facilities',
+    landingFacilitiesSubtitle: 'Everything you need to stay consistent.',
+    landingFacilitiesAction: 'Ask for seat availability',
+
+    landingFacilitySeatTitle: 'Dedicated seating',
+    landingFacilitySeatDetail: 'Comfortable desk setup designed for long study sessions.',
+    landingFacilityQuietTitle: 'Quiet environment',
+    landingFacilityQuietDetail: 'A calm space built for focus and consistency.',
+    landingFacilityLightingTitle: 'Good lighting',
+    landingFacilityLightingDetail: 'Well-lit setup to reduce fatigue during long hours.',
+    landingFacilityCleanTitle: 'Clean & maintained',
+    landingFacilityCleanDetail: 'Hygienic study space with regular upkeep.',
+    landingFacilityChargingTitle: 'Charging points',
+    landingFacilityChargingDetail: 'Charge your phone/laptop while you study.',
+    landingFacilityRulesTitle: 'Student-friendly rules',
+    landingFacilityRulesDetail: 'Clear guidance so everyone can focus.',
+
+    landingPlansTitle: 'Plans',
+    landingPlansSubtitle: 'Monthly and yearly options — enquire for current fee and timings.',
+    landingMonthlyPlanTitle: 'Monthly Plan',
+    landingMonthlyPlanDetail: 'One simple monthly plan for consistent preparation.',
+    landingYearlyPlanTitle: 'Yearly Plan',
+    landingYearlyPlanDetail: 'Best value for long-term, serious preparation.',
+    landingTagMostPopular: 'Most popular',
+    landingTagBestValue: 'Best value',
+    landingPlanMetaBestFor: 'Best for',
+    landingPlanMetaRenewal: 'Renewal',
+    landingPlanMonthlyBestFor: 'Flexible (Monthly)',
+    landingPlanMonthlyRenewal: 'Monthly',
+    landingPlanYearlyBestFor: 'Long-term prep',
+    landingPlanYearlyRenewal: 'Yearly',
+    landingPlanFeatureSeat: 'Dedicated seating',
+    landingPlanFeatureFocus: 'Focus-first environment',
+    landingPlanFeatureSimple: 'Simple plan process',
+    landingPlanFeatureClean: 'Clean & maintained',
+    landingPlanMonthlyExtra1: 'More flexibility if your schedule changes',
+    landingPlanMonthlyExtra2: 'Great to start and build a routine',
+    landingPlanYearlyExtra1: 'Less hassle with fewer renewals',
+    landingPlanYearlyExtra2: 'Best value for committed students',
+    landingPlanFeesNote: 'Fees and timings may vary based on seat availability.',
+    landingPlanCtaFees: 'Get fee & timings',
+
+    landingHowTitle: 'How it works',
+    landingHowSubtitle: 'Enquire → visit → confirm your seat.',
+    landingHowStep1Title: 'Send enquiry',
+    landingHowStep1Detail: 'Share your name and mobile number.',
+    landingHowStep2Title: 'Visit & check',
+    landingHowStep2Detail: 'See the place, timings, and rules.',
+    landingHowStep3Title: 'Confirm seat',
+    landingHowStep3Detail: 'Complete admission and start your routine.',
+
+    landingEnquiryTitle: 'Enquiry',
+    landingEnquirySubtitle: 'Share your details — we’ll respond with availability, timings, and fees.',
+    landingEnquiryFullName: 'Full Name',
+    landingEnquiryMobile: 'Mobile Number',
+    landingEnquiryEmailOptional: 'Email (optional)',
+    landingEnquiryMessage: 'Message',
+    landingEnquiryMessagePlaceholder: 'Seat availability, timings, monthly fee, rules, facilities…',
+    landingEnquirySend: 'Send Enquiry',
+    landingEnquirySending: 'Sending…',
+    landingEnquiryReplyTime: 'We reply during working hours.',
+    landingEnquiryThanks: 'Thanks! We received your enquiry.',
+
+    landingWhyTitle: 'Why students choose Phoenix',
+    landingWhySubtitle: 'A simple setup, done right.',
+    landingWhyRow1Title: 'Designed for focus',
+    landingWhyRow1Detail: 'A calm environment that supports deep study.',
+    landingWhyRow2Title: 'Perfect for exam prep',
+    landingWhyRow2Detail: 'A dedicated seat helps build a daily routine.',
+    landingWhyRow3Title: 'Guided onboarding',
+    landingWhyRow3Detail: 'We help you understand timings, rules, and plans.',
+    landingWhyLocation: 'Location',
+    landingWhyLocationValue: 'Amravati, Maharashtra',
+    landingWhyLocalityHint: 'Share your preferred locality in the message.',
+
+    landingToggleLanguage: 'Toggle language',
+    landingPhonePlaceholder: '10-digit',
+    landingFooterRights: '© {{year}} Phoenix Study Room. All rights reserved.',
   },
   mr: {
     appName: 'Phoenix Study Room',
@@ -550,6 +680,7 @@ const MESSAGES = {
     navSeats: 'सीट्स',
     navPayments: 'पेमेंट्स',
     navReports: 'अहवाल',
+    navEnquiries: 'चौकशी',
     navSettings: 'सेटिंग्ज',
 
     loginTitle: 'अॅडमिन लॉगिन',
@@ -559,6 +690,130 @@ const MESSAGES = {
     login: 'लॉगिन',
     signingIn: 'साइन इन होत आहे…',
     tipInviteOnly: 'टीप: Supabase Auth सेटिंग्जमध्ये public signups बंद करा आणि फक्त तुमच्या स्टाफला invite करा.',
+
+    enquiriesTitle: 'चौकशी',
+    enquiriesSubtitle: 'पब्लिक वेबसाईट फॉर्ममधून आलेले संदेश.',
+    enquiriesRefresh: 'रिफ्रेश',
+    enquiriesEmpty: 'अजून कोणतीही चौकशी नाही.',
+    enquiriesLoadFailed: 'चौकशी लोड होऊ शकली नाही',
+    enquiriesColDate: 'दिनांक',
+    enquiriesColName: 'नाव',
+    enquiriesColPhone: 'मोबाईल',
+    enquiriesColEmail: 'ईमेल',
+    enquiriesColMessage: 'मेसज',
+
+    landingLocation: 'अमरावती, महाराष्ट्र',
+    landingNavFacilities: 'सुविधा',
+    landingNavPlans: 'प्लॅन',
+    landingNavEnquiry: 'चौकशी',
+    landingEnquiriesOpen: 'चौकशी सुरू आहे',
+
+    landingHeroTitle: 'अभ्यासाला गंभीर बनवणारी स्टडी रूम.',
+    landingHeroSubtitle:
+      'शांत, आरामदायक आणि फोकससाठी डिझाइन केलेली जागा. परीक्षा तयारीसाठी सातत्य हवे असेल, तर Phoenix तुमच्यासाठी योग्य आहे.',
+    landingCtaEnquireNow: 'चौकशी करा',
+    landingCtaSeeFacilities: 'सुविधा पहा',
+
+    landingMiniStatSeats: 'सीट',
+    landingMiniStatSeatsValue: 'निश्चित',
+    landingMiniStatEnvironment: 'पर्यावरण',
+    landingMiniStatEnvironmentValue: 'शांत',
+    landingMiniStatCity: 'शहर',
+    landingMiniStatCityValue: 'अमरावती',
+
+    landingQuickHighlights: 'मुख्य वैशिष्ट्ये',
+    landingQuickHighlightsSubtitle: 'विद्यार्थ्यांना सामान्यतः हे महत्त्वाचे वाटते.',
+    landingPrev: 'मागे',
+    landingNext: 'पुढे',
+
+    landingHighlightComfort: 'आरामदायक',
+    landingHighlightComfortDetail: 'लांब अभ्यासासाठी स्वच्छ आणि आरामदायक सेटअप.',
+    landingHighlightDiscipline: 'शिस्त',
+    landingHighlightDisciplineDetail: 'सातत्य टिकवण्यासाठी फोकस-फर्स्ट वातावरण.',
+    landingHighlightProcess: 'सोपी प्रक्रिया',
+    landingHighlightProcessDetail: 'चौकशी → भेट → सीट निश्चित → अभ्यास सुरू.',
+    landingHighlightTransparent: 'पारदर्शक',
+    landingHighlightTransparentDetail: 'टायमिंग आणि प्लॅनबाबत स्पष्ट माहिती.',
+    landingHighlightsNote: 'अॅडमिशन व सीट अलोकेशनसाठी चौकशी करा — पुढील स्टेप्स आम्ही सांगू.',
+
+    landingFacilitiesTitle: 'सुविधा',
+    landingFacilitiesSubtitle: 'सातत्य ठेवण्यासाठी आवश्यक सर्वकाही.',
+    landingFacilitiesAction: 'सीट उपलब्धता विचारा',
+
+    landingFacilitySeatTitle: 'निश्चित सीट',
+    landingFacilitySeatDetail: 'लांब अभ्यासासाठी आरामदायक डेस्क सेटअप.',
+    landingFacilityQuietTitle: 'शांत वातावरण',
+    landingFacilityQuietDetail: 'फोकस आणि सातत्यासाठी शांत जागा.',
+    landingFacilityLightingTitle: 'चांगला प्रकाश',
+    landingFacilityLightingDetail: 'दीर्घ वेळ अभ्यासासाठी योग्य प्रकाशयोजना.',
+    landingFacilityCleanTitle: 'स्वच्छता व देखभाल',
+    landingFacilityCleanDetail: 'नियमित देखभालीसह स्वच्छ अभ्यास जागा.',
+    landingFacilityChargingTitle: 'चार्जिंग पॉइंट्स',
+    landingFacilityChargingDetail: 'फोन/लॅपटॉप चार्ज करत अभ्यास करा.',
+    landingFacilityRulesTitle: 'विद्यार्थी-मैत्री नियम',
+    landingFacilityRulesDetail: 'सर्वांना फोकस राहावा म्हणून स्पष्ट मार्गदर्शन.',
+
+    landingPlansTitle: 'प्लॅन',
+    landingPlansSubtitle: 'मासिक व वार्षिक पर्याय — फी आणि टायमिंगसाठी चौकशी करा.',
+    landingMonthlyPlanTitle: 'मासिक प्लॅन',
+    landingMonthlyPlanDetail: 'सातत्यपूर्ण तयारीसाठी सोपा मासिक प्लॅन.',
+    landingYearlyPlanTitle: 'वार्षिक प्लॅन',
+    landingYearlyPlanDetail: 'लांब काळासाठी सर्वोत्तम व्हॅल्यू प्लॅन.',
+    landingTagMostPopular: 'लोकप्रिय',
+    landingTagBestValue: 'बेस्ट व्हॅल्यू',
+    landingPlanMetaBestFor: 'योग्य',
+    landingPlanMetaRenewal: 'नूतनीकरण',
+    landingPlanMonthlyBestFor: 'लवचिक (मासिक)',
+    landingPlanMonthlyRenewal: 'मासिक',
+    landingPlanYearlyBestFor: 'दीर्घकालीन तयारी',
+    landingPlanYearlyRenewal: 'वार्षिक',
+    landingPlanFeatureSeat: 'निश्चित सीट',
+    landingPlanFeatureFocus: 'फोकस-फर्स्ट वातावरण',
+    landingPlanFeatureSimple: 'सोपी प्रक्रिया',
+    landingPlanFeatureClean: 'स्वच्छता व देखभाल',
+    landingPlanMonthlyExtra1: 'शेड्यूल बदलल्यास अधिक लवचिकता',
+    landingPlanMonthlyExtra2: 'सुरुवात करून सवय/रूटीन बनवण्यासाठी उत्तम',
+    landingPlanYearlyExtra1: 'कमी नूतनीकरणामुळे कमी त्रास',
+    landingPlanYearlyExtra2: 'निश्चित तयारीसाठी बेस्ट व्हॅल्यू',
+    landingPlanFeesNote: 'सीट उपलब्धतेनुसार फी आणि टायमिंग बदलू शकते.',
+    landingPlanCtaFees: 'फी व टायमिंग विचारा',
+
+    landingHowTitle: 'प्रक्रिया कशी आहे',
+    landingHowSubtitle: 'चौकशी → भेट → सीट निश्चित.',
+    landingHowStep1Title: 'चौकशी पाठवा',
+    landingHowStep1Detail: 'नाव आणि मोबाईल नंबर द्या.',
+    landingHowStep2Title: 'भेट द्या',
+    landingHowStep2Detail: 'जागा, टायमिंग आणि नियम पाहा.',
+    landingHowStep3Title: 'सीट निश्चित करा',
+    landingHowStep3Detail: 'अॅडमिशन पूर्ण करून अभ्यास सुरू करा.',
+
+    landingEnquiryTitle: 'चौकशी',
+    landingEnquirySubtitle: 'तुमची माहिती द्या — उपलब्धता, टायमिंग आणि फी कळवू.',
+    landingEnquiryFullName: 'पूर्ण नाव',
+    landingEnquiryMobile: 'मोबाईल नंबर',
+    landingEnquiryEmailOptional: 'ईमेल (ऐच्छिक)',
+    landingEnquiryMessage: 'मेसज',
+    landingEnquiryMessagePlaceholder: 'सीट उपलब्धता, टायमिंग, फी, नियम, सुविधा…',
+    landingEnquirySend: 'चौकशी पाठवा',
+    landingEnquirySending: 'पाठवत आहे…',
+    landingEnquiryReplyTime: 'वर्किंग अवर्समध्ये उत्तर मिळेल.',
+    landingEnquiryThanks: 'धन्यवाद! तुमची चौकशी प्राप्त झाली.',
+
+    landingWhyTitle: 'Phoenix का निवडावा?',
+    landingWhySubtitle: 'सोपं, स्वच्छ आणि फोकससाठी योग्य.',
+    landingWhyRow1Title: 'फोकससाठी डिझाइन',
+    landingWhyRow1Detail: 'दीर्घ अभ्यासासाठी शांत वातावरण.',
+    landingWhyRow2Title: 'परीक्षा तयारीसाठी योग्य',
+    landingWhyRow2Detail: 'निश्चित सीटमुळे रोजची शिस्त लागते.',
+    landingWhyRow3Title: 'मार्गदर्शन',
+    landingWhyRow3Detail: 'टायमिंग, नियम आणि प्लॅन समजून घेण्यासाठी मदत.',
+    landingWhyLocation: 'ठिकाण',
+    landingWhyLocationValue: 'अमरावती, महाराष्ट्र',
+    landingWhyLocalityHint: 'मेसजमध्ये तुमचा परिसर/लोकॅलिटी लिहा.',
+
+    landingToggleLanguage: 'भाषा बदला',
+    landingPhonePlaceholder: '10-अंकी',
+    landingFooterRights: '© {{year}} Phoenix Study Room. सर्व हक्क राखीव.',
   },
 } as const
 
@@ -598,10 +853,10 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   }, [locale])
 
   const value = useMemo<I18nContextValue>(() => {
-    const t: I18nContextValue['t'] = (key, vars) => {
+    const t = ((key: string, vars?: I18nVars) => {
       const msg = (MESSAGES as any)[locale]?.[key] ?? (MESSAGES as any).en[key] ?? String(key)
       return interpolate(String(msg), vars)
-    }
+    }) as I18nContextValue['t']
 
     return {
       locale,
