@@ -104,14 +104,18 @@ export function LandingPage() {
           .eq('id', 'default')
           .maybeSingle()
         const val = data?.value as any
+        console.log('[LandingPage] Fetched app_settings:', val)
         if (val?.centerAddress) setCenterAddress(String(val.centerAddress))
         if (val?.centerName) setCenterName(String(val.centerName))
         if (val?.centerPhone) setCenterPhone(String(val.centerPhone))
         if (Array.isArray(val?.galleryImages) && val.galleryImages.length > 0) {
+          console.log('[LandingPage] Setting gallery images:', val.galleryImages)
           setGalleryImages(val.galleryImages)
+        } else {
+          console.log('[LandingPage] No gallery images found')
         }
-      } catch {
-        /* ignore */
+      } catch (err) {
+        console.error('[LandingPage] Error loading settings:', err)
       }
     }
     load()
