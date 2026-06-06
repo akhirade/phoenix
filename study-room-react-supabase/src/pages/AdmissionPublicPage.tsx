@@ -128,6 +128,7 @@ function AdmissionPublicForm({
 
   const [fullName, setFullName] = useState(student.full_name ?? '')
   const [mobile, setMobile] = useState(normalizeMobile10(student.mobile ?? ''))
+  const [mobileError, setMobileError] = useState<string | null>(null)
   const [email, setEmail] = useState(student.email ?? '')
   const [birthDate, setBirthDate] = useState(student.birth_date ?? '')
   const [gender, setGender] = useState(student.gender ?? '')
@@ -138,6 +139,16 @@ function AdmissionPublicForm({
   const [idProof, setIdProof] = useState(student.id_proof ?? '')
   const [signatureName, setSignatureName] = useState(student.full_name ?? '')
   const [acceptTerms, setAcceptTerms] = useState(false)
+
+  function handleMobileChange(raw: string) {
+    const val = normalizeMobile10(raw)
+    setMobile(val)
+    if (val.length > 0 && val.length < 10) {
+      setMobileError(`Mobile must be 10 digits (${val.length}/10 entered)`)
+    } else {
+      setMobileError(null)
+    }
+  }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -220,20 +231,33 @@ function AdmissionPublicForm({
           <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">
             {t('fullName')} <span className="text-rose-400">*</span>
           </label>
-          <input className="sr-input" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+          <input
+            className="sr-input"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value.slice(0, 100))}
+            maxLength={100}
+            required
+          />
+          <div className="text-right text-xs text-slate-400 mt-0.5">{fullName.length}/100</div>
         </div>
         <div>
           <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">
             {t('mobile')} <span className="text-rose-400">*</span>
           </label>
           <input
-            className="sr-input"
+            className={`sr-input ${mobileError ? 'border-rose-400 focus:ring-rose-400' : ''}`}
             value={mobile}
-            onChange={(e) => setMobile(normalizeMobile10(e.target.value))}
+            onChange={(e) => handleMobileChange(e.target.value)}
             inputMode="numeric"
             autoComplete="tel"
+            pattern="\d{10}"
+            maxLength={10}
             required
           />
+          {mobileError
+            ? <div className="text-xs text-rose-500 mt-0.5">{mobileError}</div>
+            : <div className="text-right text-xs text-slate-400 mt-0.5">{mobile.length}/10 digits</div>
+          }
         </div>
       </div>
 
@@ -243,9 +267,10 @@ function AdmissionPublicForm({
           <input
             className="sr-input"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => setEmail(e.target.value.slice(0, 200))}
             type="email"
             autoComplete="email"
+            maxLength={200}
           />
         </div>
         <div>
@@ -266,7 +291,17 @@ function AdmissionPublicForm({
 
       <div>
         <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">{t('address')}</label>
-        <textarea className="sr-textarea" rows={3} value={address} onChange={(e) => setAddress(e.target.value)} required />
+        <textarea
+          className="sr-textarea"
+          rows={3}
+          value={address}
+          onChange={(e) => setAddress(e.target.value.slice(0, 1000))}
+          maxLength={1000}
+          required
+        />
+        <div className={`text-right text-xs mt-0.5 ${address.length >= 950 ? 'text-rose-400' : 'text-slate-400'}`}>
+          {address.length}/1000
+        </div>
       </div>
 
       <div>
@@ -274,25 +309,26 @@ function AdmissionPublicForm({
         <input
           className="sr-input"
           value={emergencyContact}
-          onChange={(e) => setEmergencyContact(e.target.value)}
+          onChange={(e) => setEmergencyContact(e.target.value.slice(0, 200))}
           placeholder={t('emergencyContactPlaceholder')}
+          maxLength={200}
         />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
           <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">{t('preparingExam')}</label>
-          <input className="sr-input" value={preparingExam} onChange={(e) => setPreparingExam(e.target.value)} />
+          <input className="sr-input" value={preparingExam} onChange={(e) => setPreparingExam(e.target.value.slice(0, 200))} maxLength={200} />
         </div>
         <div>
           <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">{t('firstPaymentReceiptNo')}</label>
-          <input className="sr-input" value={firstPaymentReceiptNo} onChange={(e) => setFirstPaymentReceiptNo(e.target.value)} />
+          <input className="sr-input" value={firstPaymentReceiptNo} onChange={(e) => setFirstPaymentReceiptNo(e.target.value.slice(0, 100))} maxLength={100} />
         </div>
       </div>
 
       <div>
         <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">{t('idProof')}</label>
-        <input className="sr-input" value={idProof} onChange={(e) => setIdProof(e.target.value)} />
+        <input className="sr-input" value={idProof} onChange={(e) => setIdProof(e.target.value.slice(0, 200))} maxLength={200} />
       </div>
 
       {termsLines.length ? (
@@ -320,7 +356,7 @@ function AdmissionPublicForm({
 
       <div>
         <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">{t('signatureName')}</label>
-        <input className="sr-input" value={signatureName} onChange={(e) => setSignatureName(e.target.value)} />
+        <input className="sr-input" value={signatureName} onChange={(e) => setSignatureName(e.target.value.slice(0, 100))} maxLength={100} />
       </div>
 
       <button className="w-full sr-btn-primary disabled:opacity-60" type="submit" disabled={busy}>

@@ -64,20 +64,48 @@ export function LandingPage() {
 
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('')
+  const [phoneError, setPhoneError] = useState<string | null>(null)
   const [email, setEmail] = useState('')
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
 
+  function handlePhoneChange(raw: string) {
+    const digits = raw.replace(/\D+/g, '').slice(0, 10)
+    setPhone(digits)
+    if (digits.length > 0 && digits.length < 10) {
+      setPhoneError(`Must be 10 digits (${digits.length}/10 entered)`)
+    } else {
+      setPhoneError(null)
+    }
+  }
+
   const canSubmit = useMemo(() => {
     if (!envOk) return false
     if (!fullName.trim()) return false
-    if (!phone.trim()) return false
+    if (phone.length !== 10) return false
     if (!message.trim()) return false
     return true
   }, [envOk, fullName, phone, message])
 
   const [highlightIndex, setHighlightIndex] = useState(0)
   const highlightCount = highlights.length
+
+  const [centerAddress, setCenterAddress] = useState<string | null>(null)
+  const [centerName, setCenterName] = useState<string | null>(null)
+
+  useEffect(() => {
+    supabase
+      .from('app_settings')
+      .select('value')
+      .eq('id', 'default')
+      .maybeSingle()
+      .then(({ data }) => {
+        const val = data?.value as any
+        if (val?.centerAddress) setCenterAddress(String(val.centerAddress))
+        if (val?.centerName) setCenterName(String(val.centerName))
+      })
+      .catch(() => {/* ignore */})
+  }, [])
 
   useEffect(() => {
     if (highlightCount <= 1) return
@@ -149,11 +177,14 @@ export function LandingPage() {
 
       <header className="sticky top-0 z-20 border-b border-slate-200/60 bg-slate-50/80 backdrop-blur dark:border-slate-800/60 dark:bg-slate-950/50">
         <div className="mx-auto w-full max-w-6xl px-4 py-3 flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <Link to="/" className="inline-flex text-base font-semibold leading-tight hover:opacity-90">
-              {t('appName')}
-            </Link>
-            <div className="text-xs text-slate-600 dark:text-slate-400">{t('landingLocation')}</div>
+          <div className="flex items-center gap-2 min-w-0">
+            <PhoenixLogo className="h-8 w-8 shrink-0 text-rose-600" />
+            <div className="min-w-0">
+              <Link to="/" className="inline-flex text-base font-semibold leading-tight hover:opacity-90">
+                {centerName ?? t('appName')}
+              </Link>
+              <div className="text-xs text-slate-600 dark:text-slate-400">{t('landingLocation')}</div>
+            </div>
           </div>
 
           <nav className="flex items-center gap-2">
@@ -199,12 +230,6 @@ export function LandingPage() {
                   <a className="sr-btn" href="#facilities">
                     {t('landingCtaSeeFacilities')}
                   </a>
-                </div>
-
-                <div className="mt-6 grid grid-cols-3 gap-2">
-                  <MiniStat label={t('landingMiniStatSeats')} value={t('landingMiniStatSeatsValue')} />
-                  <MiniStat label={t('landingMiniStatEnvironment')} value={t('landingMiniStatEnvironmentValue')} />
-                  <MiniStat label={t('landingMiniStatCity')} value={t('landingMiniStatCityValue')} />
                 </div>
 
                 <div className="mt-5">
@@ -438,20 +463,33 @@ export function LandingPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">{t('landingEnquiryFullName')}</label>
-                      <input className="sr-input" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+                      <input
+                        className="sr-input"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value.slice(0, 100))}
+                        maxLength={100}
+                        required
+                      />
+                      <div className="text-right text-xs text-slate-400 mt-0.5">{fullName.length}/100</div>
                     </div>
 
                     <div>
                       <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">{t('landingEnquiryMobile')}</label>
                       <input
-                        className="sr-input"
+                        className={`sr-input ${phoneError ? 'border-rose-400 focus:ring-rose-400' : ''}`}
                         value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
+                        onChange={(e) => handlePhoneChange(e.target.value)}
                         inputMode="numeric"
                         autoComplete="tel"
+                        pattern="\d{10}"
+                        maxLength={10}
                         placeholder={t('landingPhonePlaceholder')}
                         required
                       />
+                      {phoneError
+                        ? <div className="text-xs text-rose-500 mt-0.5">{phoneError}</div>
+                        : <div className="text-right text-xs text-slate-400 mt-0.5">{phone.length}/10 digits</div>
+                      }
                     </div>
                   </div>
 
@@ -472,11 +510,15 @@ export function LandingPage() {
                     <textarea
                       className="sr-textarea"
                       value={message}
-                      onChange={(e) => setMessage(e.target.value)}
+                      onChange={(e) => setMessage(e.target.value.slice(0, 1000))}
                       rows={4}
+                      maxLength={1000}
                       placeholder={t('landingEnquiryMessagePlaceholder')}
                       required
                     />
+                    <div className={`text-right text-xs mt-0.5 ${message.length >= 950 ? 'text-rose-400' : 'text-slate-400'}`}>
+                      {message.length}/1000
+                    </div>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
@@ -498,9 +540,23 @@ export function LandingPage() {
                   <ValueRow title={t('landingWhyRow3Title')} detail={t('landingWhyRow3Detail')} />
                 </div>
 
-                <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-sm text-slate-700 dark:border-slate-800 dark:bg-slate-900/20 dark:text-slate-300">
-                  {t('landingWhyLocation')}: {t('landingWhyLocationValue')}
-                  <div className="mt-1 text-xs text-slate-600 dark:text-slate-400">{t('landingWhyLocalityHint')}</div>
+                <div className="mt-6 rounded-2xl border border-slate-200 bg-white/70 p-4 transition-transform hover:-translate-y-0.5 dark:border-slate-800 dark:bg-slate-950/40">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="text-sm font-semibold">{t('landingWhyLocation')}</div>
+                    <IconBadge kind="sky" icon={<IconArrow />} />
+                  </div>
+                  <div className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+                    {centerAddress ?? t('landingWhyLocationValue')}
+                  </div>
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(centerAddress ?? t('landingWhyLocationValue'))}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-sky-600 hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 21c-4-4.5-6-7.9-6-10.5a6 6 0 1 1 12 0C18 13.1 16 16.5 12 21z"/><circle cx="12" cy="10.5" r="2" fill="currentColor" stroke="none"/></svg>
+                    Get Directions
+                  </a>
                 </div>
 
                 <div className="mt-4 sr-card-soft p-4">
@@ -525,6 +581,33 @@ export function LandingPage() {
         </div>
       </main>
     </div>
+  )
+}
+
+function PhoenixLogo({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 64 64"
+      fill="none"
+      className={className}
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        fill="currentColor"
+        fillRule="evenodd"
+        d="M32 6c-4.7 5.3-6.8 10.7-6.8 16.3 0 3.2.6 6.5 1.8 9.8-5-3.1-8.9-7.6-10.6-13.2C11.6 29.1 14.4 43 26 50.5c-2.4-5.6-2.2-10.4.4-14.5 1.1 5.8 3.6 10.2 7.6 13.3 4-3.1 6.5-7.5 7.6-13.3 2.7 4.1 2.8 8.9.4 14.5C49.6 43 52.4 29.1 47.6 18.9c-1.7 5.6-5.6 10.1-10.6 13.2 1.2-3.3 1.8-6.6 1.8-9.8C38.8 16.7 36.7 11.3 32 6Z"
+        clipRule="evenodd"
+      />
+      <path
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+        d="M19 54c4 2.7 8.3 4 13 4s9-1.3 13-4"
+        opacity="0.9"
+      />
+    </svg>
   )
 }
 
@@ -612,15 +695,67 @@ function PlanFeature({ icon, text }: { icon: React.ReactNode; text: string }) {
 }
 
 function HeroMosaic() {
+  const images = [
+    { src: '/images/study-room-1.jpg', alt: 'Study room with organized seating' },
+    { src: '/images/study-room-2.jpg', alt: 'Students studying at cubicles' },
+    { src: '/images/study-room-3.jpg', alt: 'Spacious study floor' },
+    { src: '/images/study-room-4.jpg', alt: 'Active learning space' },
+  ]
+  const [idx, setIdx] = React.useState(0)
+
   return (
     <div className="rounded-2xl border border-slate-200 bg-white/70 p-3 dark:border-slate-800 dark:bg-slate-950/40">
-      <div className="grid grid-cols-12 gap-2">
-        <div className="col-span-7 h-20 rounded-xl bg-gradient-to-br from-sky-500/15 to-transparent dark:from-sky-400/15" />
-        <div className="col-span-5 h-20 rounded-xl bg-gradient-to-br from-amber-500/15 to-transparent dark:from-amber-400/15" />
-        <div className="col-span-4 h-16 rounded-xl bg-gradient-to-br from-emerald-500/15 to-transparent dark:from-emerald-400/15" />
-        <div className="col-span-8 h-16 rounded-xl bg-gradient-to-br from-slate-500/10 to-transparent dark:from-slate-400/10" />
+      {/* Mobile: carousel */}
+      <div className="sm:hidden">
+        <div className="relative h-52 overflow-hidden rounded-xl">
+          <img
+            key={idx}
+            src={images[idx].src}
+            alt={images[idx].alt}
+            className="h-full w-full object-cover transition-opacity duration-300"
+          />
+          <button
+            onClick={() => setIdx((i) => (i === 0 ? images.length - 1 : i - 1))}
+            className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-1.5 text-white"
+            aria-label="Previous"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="h-4 w-4"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
+          </button>
+          <button
+            onClick={() => setIdx((i) => (i === images.length - 1 ? 0 : i + 1))}
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-1.5 text-white"
+            aria-label="Next"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="h-4 w-4"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
+          </button>
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
+            {images.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setIdx(i)}
+                className={`h-1.5 rounded-full transition-all ${i === idx ? 'w-4 bg-white' : 'w-1.5 bg-white/50'}`}
+                aria-label={`Go to image ${i + 1}`}
+              />
+            ))}
+          </div>
+        </div>
       </div>
-      <div className="mt-2 text-xs text-slate-600 dark:text-slate-400">Preview-style visuals (replace with real photos anytime).</div>
+
+      {/* Desktop: mosaic grid */}
+      <div className="hidden sm:grid grid-cols-12 gap-2">
+        <div className="col-span-7 h-28 overflow-hidden rounded-xl">
+          <img src="/images/study-room-1.jpg" alt="Study room with organized seating" className="h-full w-full object-cover" />
+        </div>
+        <div className="col-span-5 h-28 overflow-hidden rounded-xl">
+          <img src="/images/study-room-2.jpg" alt="Students studying at cubicles" className="h-full w-full object-cover" />
+        </div>
+        <div className="col-span-4 h-24 overflow-hidden rounded-xl">
+          <img src="/images/study-room-4.jpg" alt="Active learning space" className="h-full w-full object-cover" />
+        </div>
+        <div className="col-span-8 h-24 overflow-hidden rounded-xl">
+          <img src="/images/study-room-3.jpg" alt="Spacious study floor" className="h-full w-full object-cover" />
+        </div>
+      </div>
     </div>
   )
 }

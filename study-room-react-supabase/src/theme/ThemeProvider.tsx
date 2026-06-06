@@ -23,7 +23,7 @@ function applyThemeToDocument(theme: ThemeMode) {
 
 function readInitialTheme(): ThemeMode {
   const raw = localStorage.getItem(STORAGE_KEY)
-  return raw === 'light' ? 'light' : 'dark'
+  return raw === 'dark' ? 'dark' : 'light'
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
@@ -31,7 +31,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     try {
       return readInitialTheme()
     } catch {
-      return 'dark'
+      return 'light'
     }
   })
 

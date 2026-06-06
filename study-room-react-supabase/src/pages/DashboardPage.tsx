@@ -4,6 +4,7 @@ import { useData } from '../lib/DataProvider'
 import { formatINR, formatLocalDateTime, monthKeyFromDate } from '../lib/utils'
 import { useI18n } from '../i18n/I18nProvider'
 import type { Payment } from '../lib/types'
+import StudyRoomGallery from '../components/StudyRoomGallery'
 
 export function DashboardPage() {
   const { loading, students, settings, listPaymentsByMonth } = useData()
@@ -152,6 +153,10 @@ export function DashboardPage() {
         <KpiCard label={t('statActiveStudents')} value={String(stats.activeCount)} />
         <KpiCard label={t('statMonthlyCollection')} value={formatINR(stats.collected)} />
         <KpiCard label={t('statPendingPayments')} value={String(stats.pendingCount)} />
+      </div>
+
+      <div className="mt-6">
+        <StudyRoomGallery />
       </div>
 
       <div className="mt-6">
