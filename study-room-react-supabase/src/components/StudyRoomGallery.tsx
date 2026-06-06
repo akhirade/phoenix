@@ -1,40 +1,20 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useData } from '../lib/DataProvider';
 
-interface GalleryImage {
-  id: number;
-  src: string;
-  alt: string;
-  title: string;
-}
+const STATIC_IMAGES = [
+  { src: '/images/study-room-1.jpg', alt: 'Conference Area' },
+  { src: '/images/study-room-2.jpg', alt: 'Study Cubicles' },
+  { src: '/images/study-room-3.jpg', alt: 'Study Floor' },
+  { src: '/images/study-room-4.jpg', alt: 'Active Learning Space' },
+];
 
 export default function StudyRoomGallery() {
-  const images: GalleryImage[] = [
-    {
-      id: 1,
-      src: '/images/study-room-1.jpg',
-      alt: 'Main conference room with organized study stations',
-      title: 'Conference Area',
-    },
-    {
-      id: 2,
-      src: '/images/study-room-2.jpg',
-      alt: 'Individual study cubicles with partition setup',
-      title: 'Study Cubicles',
-    },
-    {
-      id: 3,
-      src: '/images/study-room-3.jpg',
-      alt: 'Spacious study floor with comfortable seating',
-      title: 'Study Floor',
-    },
-    {
-      id: 4,
-      src: '/images/study-room-4.jpg',
-      alt: 'Students actively learning in study stations',
-      title: 'Active Learning Space',
-    },
-  ];
+  const { settings } = useData();
+  const rawImages = (settings.galleryImages && settings.galleryImages.length > 0)
+    ? settings.galleryImages.map((src, i) => ({ src, alt: `Study room photo ${i + 1}` }))
+    : STATIC_IMAGES;
+  const images = rawImages;
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
@@ -96,19 +76,12 @@ export default function StudyRoomGallery() {
           </div>
         </div>
 
-        {/* Image Title and Description */}
-        <div className="mt-4">
-          <h3 className="text-lg font-semibold text-gray-900">
-            {currentImage.title}
-          </h3>
-          <p className="mt-1 text-sm text-gray-600">{currentImage.alt}</p>
-        </div>
 
         {/* Thumbnail Navigation */}
         <div className="mt-6 flex gap-3 overflow-x-auto pb-2">
           {images.map((image, index) => (
             <button
-              key={image.id}
+              key={index}
               onClick={() => goToImage(index)}
               className={`relative h-20 w-32 flex-shrink-0 overflow-hidden rounded-lg transition-all ${
                 index === currentImageIndex

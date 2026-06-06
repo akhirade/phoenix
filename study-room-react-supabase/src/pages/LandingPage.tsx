@@ -92,19 +92,27 @@ export function LandingPage() {
 
   const [centerAddress, setCenterAddress] = useState<string | null>(null)
   const [centerName, setCenterName] = useState<string | null>(null)
+  const [galleryImages, setGalleryImages] = useState<string[]>([])
 
   useEffect(() => {
-    supabase
-      .from('app_settings')
-      .select('value')
-      .eq('id', 'default')
-      .maybeSingle()
-      .then(({ data }) => {
+    async function load() {
+      try {
+        const { data } = await supabase
+          .from('app_settings')
+          .select('value')
+          .eq('id', 'default')
+          .maybeSingle()
         const val = data?.value as any
         if (val?.centerAddress) setCenterAddress(String(val.centerAddress))
         if (val?.centerName) setCenterName(String(val.centerName))
-      })
-      .catch(() => {/* ignore */})
+        if (Array.isArray(val?.galleryImages) && val.galleryImages.length > 0) {
+          setGalleryImages(val.galleryImages)
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+    load()
   }, [])
 
   useEffect(() => {
@@ -233,7 +241,7 @@ export function LandingPage() {
                 </div>
 
                 <div className="mt-5">
-                  <HeroMosaic />
+                  <HeroMosaic images={galleryImages} />
                 </div>
               </div>
             </div>
@@ -611,15 +619,6 @@ function PhoenixLogo({ className }: { className?: string }) {
   )
 }
 
-function MiniStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white/70 p-3 transition-transform hover:-translate-y-0.5 dark:border-slate-800 dark:bg-slate-950/40">
-      <div className="text-[11px] text-slate-600 dark:text-slate-400">{label}</div>
-      <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{value}</div>
-    </div>
-  )
-}
-
 function HighlightCard({ title, detail }: { title: string; detail: string }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white/70 p-4 transition-transform hover:-translate-y-0.5 dark:border-slate-800 dark:bg-slate-950/40">
@@ -694,13 +693,16 @@ function PlanFeature({ icon, text }: { icon: React.ReactNode; text: string }) {
   )
 }
 
-function HeroMosaic() {
-  const images = [
+function HeroMosaic({ images: dynamicImages }: { images: string[] }) {
+  const STATIC = [
     { src: '/images/study-room-1.jpg', alt: 'Study room with organized seating' },
     { src: '/images/study-room-2.jpg', alt: 'Students studying at cubicles' },
     { src: '/images/study-room-3.jpg', alt: 'Spacious study floor' },
     { src: '/images/study-room-4.jpg', alt: 'Active learning space' },
   ]
+  const images = dynamicImages.length > 0
+    ? dynamicImages.map((src, i) => ({ src, alt: `Study room photo ${i + 1}` }))
+    : STATIC
   const [idx, setIdx] = React.useState(0)
 
   return (
@@ -744,16 +746,16 @@ function HeroMosaic() {
       {/* Desktop: mosaic grid */}
       <div className="hidden sm:grid grid-cols-12 gap-2">
         <div className="col-span-7 h-28 overflow-hidden rounded-xl">
-          <img src="/images/study-room-1.jpg" alt="Study room with organized seating" className="h-full w-full object-cover" />
+          <img src={images[0]?.src} alt={images[0]?.alt} className="h-full w-full object-cover" />
         </div>
         <div className="col-span-5 h-28 overflow-hidden rounded-xl">
-          <img src="/images/study-room-2.jpg" alt="Students studying at cubicles" className="h-full w-full object-cover" />
+          <img src={images[1]?.src} alt={images[1]?.alt} className="h-full w-full object-cover" />
         </div>
         <div className="col-span-4 h-24 overflow-hidden rounded-xl">
-          <img src="/images/study-room-4.jpg" alt="Active learning space" className="h-full w-full object-cover" />
+          <img src={images[3]?.src} alt={images[3]?.alt} className="h-full w-full object-cover" />
         </div>
         <div className="col-span-8 h-24 overflow-hidden rounded-xl">
-          <img src="/images/study-room-3.jpg" alt="Spacious study floor" className="h-full w-full object-cover" />
+          <img src={images[2]?.src} alt={images[2]?.alt} className="h-full w-full object-cover" />
         </div>
       </div>
     </div>

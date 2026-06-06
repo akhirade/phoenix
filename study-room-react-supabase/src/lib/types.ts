@@ -8,6 +8,7 @@ export type AppSettings = {
   centerAddress?: string
   centerPhone?: string
   admissionTerms?: string
+  galleryImages?: string[]
 }
 
 export type StudentStatus = 'Active' | 'Inactive'
