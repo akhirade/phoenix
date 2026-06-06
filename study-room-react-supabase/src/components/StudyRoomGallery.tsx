@@ -2,21 +2,19 @@ import { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useData } from '../lib/DataProvider';
 
-const STATIC_IMAGES = [
-  { src: '/images/study-room-1.jpg', alt: 'Conference Area' },
-  { src: '/images/study-room-2.jpg', alt: 'Study Cubicles' },
-  { src: '/images/study-room-3.jpg', alt: 'Study Floor' },
-  { src: '/images/study-room-4.jpg', alt: 'Active Learning Space' },
-];
-
 export default function StudyRoomGallery() {
   const { settings } = useData();
   const rawImages = (settings.galleryImages && settings.galleryImages.length > 0)
     ? settings.galleryImages.map((src, i) => ({ src, alt: `Study room photo ${i + 1}` }))
-    : STATIC_IMAGES;
+    : [];
   const images = rawImages;
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Show nothing if no images are uploaded
+  if (images.length === 0) {
+    return null;
+  }
 
   const goToPrevious = () => {
     setCurrentImageIndex((prevIndex) =>

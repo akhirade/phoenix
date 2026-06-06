@@ -23,8 +23,8 @@ create policy "study_room_storage_delete_auth" on storage.objects
 for delete to authenticated
 using (bucket_id = 'study-room');
 
--- Public read for this bucket (useful if bucket is later switched from public to private).
+-- Public read for this bucket (anyone can view, no authentication needed).
 drop policy if exists "study_room_storage_select_public" on storage.objects;
 create policy "study_room_storage_select_public" on storage.objects
-for select to public
+for select
 using (bucket_id = 'study-room');

@@ -92,6 +92,7 @@ export function LandingPage() {
 
   const [centerAddress, setCenterAddress] = useState<string | null>(null)
   const [centerName, setCenterName] = useState<string | null>(null)
+  const [centerPhone, setCenterPhone] = useState<string | null>(null)
   const [galleryImages, setGalleryImages] = useState<string[]>([])
 
   useEffect(() => {
@@ -105,6 +106,7 @@ export function LandingPage() {
         const val = data?.value as any
         if (val?.centerAddress) setCenterAddress(String(val.centerAddress))
         if (val?.centerName) setCenterName(String(val.centerName))
+        if (val?.centerPhone) setCenterPhone(String(val.centerPhone))
         if (Array.isArray(val?.galleryImages) && val.galleryImages.length > 0) {
           setGalleryImages(val.galleryImages)
         }
@@ -192,6 +194,14 @@ export function LandingPage() {
                 {centerName ?? t('appName')}
               </Link>
               <div className="text-xs text-slate-600 dark:text-slate-400">{t('landingLocation')}</div>
+              {centerPhone ? (
+                <a
+                  href={`tel:${centerPhone.replace(/[^\d+]/g, '')}`}
+                  className="text-xs text-sky-700 hover:underline dark:text-sky-300"
+                >
+                  {centerPhone}
+                </a>
+              ) : null}
             </div>
           </div>
 
@@ -694,16 +704,15 @@ function PlanFeature({ icon, text }: { icon: React.ReactNode; text: string }) {
 }
 
 function HeroMosaic({ images: dynamicImages }: { images: string[] }) {
-  const STATIC = [
-    { src: '/images/study-room-1.jpg', alt: 'Study room with organized seating' },
-    { src: '/images/study-room-2.jpg', alt: 'Students studying at cubicles' },
-    { src: '/images/study-room-3.jpg', alt: 'Spacious study floor' },
-    { src: '/images/study-room-4.jpg', alt: 'Active learning space' },
-  ]
   const images = dynamicImages.length > 0
     ? dynamicImages.map((src, i) => ({ src, alt: `Study room photo ${i + 1}` }))
-    : STATIC
+    : []
   const [idx, setIdx] = React.useState(0)
+
+  // Hide if no images uploaded
+  if (images.length === 0) {
+    return null
+  }
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white/70 p-3 dark:border-slate-800 dark:bg-slate-950/40">
