@@ -65,6 +65,11 @@ drop policy if exists "settings_select_auth" on public.app_settings;
 create policy "settings_select_auth" on public.app_settings
 for select to authenticated using (tenant_id = public.current_tenant_id());
 
+-- Public read for default settings (landing page needs this for gallery images, center info, etc.)
+drop policy if exists "settings_select_public" on public.app_settings;
+create policy "settings_select_public" on public.app_settings
+for select to public using (id = 'default');
+
 drop policy if exists "settings_insert_auth" on public.app_settings;
 create policy "settings_insert_auth" on public.app_settings
 for insert to authenticated with check (tenant_id = public.current_tenant_id());
