@@ -614,9 +614,11 @@ export function StudentProfileModal({
 
                         const text = `${(settings.centerName || t('appName')).trim()}\nAdmission Form Link:\n${link}`
                         const wa = `https://wa.me/91${raw}?text=${encodeURIComponent(text)}`
-                        window.open(wa, '_blank', 'noopener,noreferrer')
+                        const opened = window.open(wa, '_blank', 'noopener,noreferrer')
+                        if (!opened) throw new Error(t('errWhatsAppPopupBlocked'))
+                        toast.success(t('whatsAppOpened'))
                       } catch (e: unknown) {
-                        const msg = e instanceof Error ? e.message : 'Failed'
+                        const msg = e instanceof Error ? e.message : t('saveFailed')
                         toast.error(msg)
                       }
                     }}
