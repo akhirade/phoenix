@@ -12,5 +12,11 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase =
   supabaseUrl && supabaseAnonKey
-    ? createClient(supabaseUrl, supabaseAnonKey)
+    ? createClient(supabaseUrl, supabaseAnonKey, {
+        global: {
+          headers: {
+            apikey: supabaseAnonKey,
+          },
+        },
+      })
     : createClient('https://example.invalid', 'invalid-anon-key')

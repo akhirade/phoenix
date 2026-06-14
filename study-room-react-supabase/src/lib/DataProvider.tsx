@@ -49,6 +49,17 @@ const DEFAULT_SETTINGS: AppSettings = {
     '10. All rights reserved to the organization regarding admission, cancellation, rule changes, etc.',
 }
 
+function isTransientNetworkError(err: unknown): boolean {
+  const msg =
+    err instanceof Error
+      ? err.message
+      : typeof err === 'object' && err !== null && 'message' in err && typeof err.message === 'string'
+        ? err.message
+        : ''
+
+  return /failed to fetch|network request failed|networkerror|load failed/i.test(msg)
+}
+
 export function DataProvider({ children }: { children: React.ReactNode }) {
   const { session, loading: authLoading } = useAuth()
   const [loading, setLoading] = useState(true)
@@ -188,16 +199,30 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     const token = randomToken(24)
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
 
-    const { data, error } = await supabase
-      .from('students')
-      .update({ admission_token: token, admission_token_expires_at: expiresAt } as any)
-      .eq('id', studentId)
-      .select('*')
-      .single()
+    let lastError: unknown = null
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      const { data, error } = await supabase
+        .from('students')
+        .update({ admission_token: token, admission_token_expires_at: expiresAt } as any)
+        .eq('id', studentId)
+        .select('*')
+        .single()
 
-    if (error) throw error
-    setStudents((prev) => prev.map((s) => (s.id === studentId ? (data as any) : s)))
-    return token
+      if (!error) {
+        setStudents((prev) => prev.map((s) => (s.id === studentId ? (data as any) : s)))
+        return token
+      }
+
+      lastError = error
+      if (!isTransientNetworkError(error)) break
+
+      if (attempt < 3) {
+        const waitMs = 250 * attempt
+        await new Promise((resolve) => window.setTimeout(resolve, waitMs))
+      }
+    }
+
+    throw lastError
   }, [])
 
   const addPayment = useCallback(async (payment: Omit<Payment, 'id' | 'created_at'>): Promise<Payment> => {

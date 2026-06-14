@@ -232,6 +232,8 @@ const MESSAGES = {
     admissionNoActiveLink: 'No active link',
     sendWhatsApp: 'Send WhatsApp',
     whatsAppOpened: 'WhatsApp opened.',
+    whatsAppOpenedNoLink: 'WhatsApp opened. Admission link will be shared after network recovers.',
+    admissionLinkPendingNetwork: 'Admission link is temporarily unavailable due to network issue.',
     errWhatsAppPopupBlocked: 'Could not open WhatsApp. Please allow pop-ups and try again.',
     admissionSubmitted: 'Submitted',
     admissionNotSubmitted: 'Not submitted',
@@ -261,6 +263,7 @@ const MESSAGES = {
     errSeatRequiredActive: 'Seat number is required for active student',
     errSeatAlreadyOccupied: 'Seat {{seat}} is already occupied by {{name}}.',
     errFailedUpdateStudent: 'Failed to update student',
+    errNetworkRequestFailed: 'Network request failed. Check internet connection and Supabase URL.',
 
     errInvalidLink: 'Invalid or expired link.',
     errAcceptTerms: 'Please accept the terms and conditions.',
@@ -632,6 +635,8 @@ const MESSAGES = {
     admissionNoActiveLink: 'लिंक नाही',
     sendWhatsApp: 'व्हॉट्सअ‍ॅप पाठवा',
     whatsAppOpened: 'व्हॉट्सअ‍ॅप उघडले.',
+    whatsAppOpenedNoLink: 'व्हॉट्सअ‍ॅप उघडले. नेटवर्क ठीक झाल्यावर अ‍ॅडमिशन लिंक शेअर करा.',
+    admissionLinkPendingNetwork: 'नेटवर्क समस्येमुळे अ‍ॅडमिशन लिंक सध्या उपलब्ध नाही.',
     errWhatsAppPopupBlocked: 'व्हॉट्सअ‍ॅप उघडता आले नाही. कृपया पॉप-अप परवानगी द्या आणि पुन्हा प्रयत्न करा.',
     admissionSubmitted: 'सबमिट झाले',
     admissionNotSubmitted: 'सबमिट नाही',
@@ -661,6 +666,7 @@ const MESSAGES = {
     errSeatRequiredActive: 'सक्रिय विद्यार्थ्यासाठी सीट आवश्यक आहे',
     errSeatAlreadyOccupied: 'सीट {{seat}} आधीच {{name}} कडे आहे.',
     errFailedUpdateStudent: 'विद्यार्थी अपडेट होऊ शकला नाही',
+    errNetworkRequestFailed: 'नेटवर्क विनंती अयशस्वी झाली. इंटरनेट कनेक्शन आणि Supabase URL तपासा.',
 
     errInvalidLink: 'लिंक अवैध किंवा एक्सपायर झाली आहे.',
     errAcceptTerms: 'कृपया नियम व अटी मान्य करा.',

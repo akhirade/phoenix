@@ -107,6 +107,7 @@ export function StudentProfileModal({
   const [error, setError] = useState<string | null>(null)
   const [studentPayments, setStudentPayments] = useState<Payment[]>([])
   const bodyRef = useRef<HTMLDivElement | null>(null)
+  const whatsappWindowRef = useRef<Window | null>(null)
 
   const student = useMemo(
     () => (studentId ? students.find((s) => s.id === studentId) ?? null : null),
@@ -603,23 +604,109 @@ export function StudentProfileModal({
                     className="sr-btn-primary shrink-0"
                     type="button"
                     onClick={async () => {
+                      let popup = whatsappWindowRef.current
+                      let openedNow = false
+
+                      if (!popup || popup.closed) {
+                        popup = window.open('', '_blank')
+                        if (!popup) {
+                          toast.error(t('errWhatsAppPopupBlocked'))
+                          return
+                        }
+                        whatsappWindowRef.current = popup
+                        openedNow = true
+                      }
+
+                      try {
+                        popup.focus()
+                      } catch {
+                        // ignore
+                      }
+
+                      try {
+                        popup.document.title = 'Preparing WhatsApp...'
+                        popup.document.body.style.margin = '0'
+                        popup.document.body.style.fontFamily = 'system-ui, -apple-system, Segoe UI, Roboto, sans-serif'
+                        popup.document.body.style.display = 'grid'
+                        popup.document.body.style.placeItems = 'center'
+                        popup.document.body.style.minHeight = '100vh'
+                        popup.document.body.style.background = '#0f172a'
+                        popup.document.body.style.color = '#e2e8f0'
+                        popup.document.body.textContent = 'Preparing WhatsApp message...'
+                      } catch {
+                        // Cross-origin tab can't be rewritten; navigation below still works.
+                      }
+
                       try {
                         const digits = String(student.mobile ?? '').replace(/\D+/g, '').trim()
                         const raw = digits.length >= 10 ? digits.slice(-10) : ''
                         if (!/^\d{10}$/.test(raw)) throw new Error(t('errMobile10Digits'))
 
-                        const token = getValidAdmissionToken(student) ?? (await ensureAdmissionLink(student.id))
+                        const center = (settings.centerName || t('appName')).trim()
                         const base = new URL(import.meta.env.BASE_URL || '/', window.location.origin)
-                        const link = new URL(`admission/${token}`, base).toString()
+                        const existingToken = getValidAdmissionToken(student)
 
-                        const text = `${(settings.centerName || t('appName')).trim()}\nAdmission Form Link:\n${link}`
-                        const wa = `https://wa.me/91${raw}?text=${encodeURIComponent(text)}`
-                        const opened = window.open(wa, '_blank', 'noopener,noreferrer')
-                        if (!opened) throw new Error(t('errWhatsAppPopupBlocked'))
-                        toast.success(t('whatsAppOpened'))
+                        if (existingToken) {
+                          const link = new URL(`admission/${existingToken}`, base).toString()
+                          const text = `${center}\nAdmission Form Link:\n${link}`
+                          const wa = `https://wa.me/91${raw}?text=${encodeURIComponent(text)}`
+                          popup.location.replace(wa)
+                          popup.focus()
+                          toast.success(t('whatsAppOpened'))
+                          return
+                        }
+
+                        try {
+                          const token = await ensureAdmissionLink(student.id)
+                          const link = new URL(`admission/${token}`, base).toString()
+                          const text = `${center}\nAdmission Form Link:\n${link}`
+                          const wa = `https://wa.me/91${raw}?text=${encodeURIComponent(text)}`
+                          popup.location.replace(wa)
+                          popup.focus()
+                          toast.success(t('whatsAppOpened'))
+                        } catch (linkErr: unknown) {
+                          const linkMsg =
+                            linkErr instanceof Error
+                              ? linkErr.message
+                              : typeof linkErr === 'object' && linkErr !== null && 'message' in linkErr && typeof linkErr.message === 'string'
+                                ? linkErr.message
+                                : ''
+
+                          if (/failed to fetch/i.test(linkMsg)) {
+                            const text = `${center}\n${t('admissionLinkPendingNetwork')}`
+                            const wa = `https://wa.me/91${raw}?text=${encodeURIComponent(text)}`
+                            popup.location.replace(wa)
+                            popup.focus()
+                            toast.success(t('whatsAppOpenedNoLink'))
+                            return
+                          }
+
+                          throw linkErr
+                        }
                       } catch (e: unknown) {
-                        const msg = e instanceof Error ? e.message : t('saveFailed')
-                        toast.error(msg)
+                        const msg =
+                          e instanceof Error
+                            ? e.message
+                            : typeof e === 'object' && e !== null && 'message' in e && typeof e.message === 'string'
+                              ? e.message
+                              : t('saveFailed')
+                        const normalized = /failed to fetch/i.test(msg) ? t('errNetworkRequestFailed') : msg
+                        if (openedNow) {
+                          try {
+                            popup.document.title = 'Unable to open WhatsApp'
+                            popup.document.body.textContent = normalized
+                          } catch {
+                            // ignore
+                          }
+                          window.setTimeout(() => {
+                            try {
+                              popup.close()
+                            } catch {
+                              // ignore
+                            }
+                          }, 1200)
+                        }
+                        toast.error(normalized)
                       }
                     }}
                   >
